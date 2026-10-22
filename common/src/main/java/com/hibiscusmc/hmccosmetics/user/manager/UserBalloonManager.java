@@ -1,5 +1,7 @@
 package com.hibiscusmc.hmccosmetics.user.manager;
 
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import com.hibiscusmc.hmccosmetics.HMCCosmeticsPlugin;
 import com.hibiscusmc.hmccosmetics.config.Settings;
 import com.hibiscusmc.hmccosmetics.cosmetic.types.CosmeticBalloonType;
@@ -38,6 +40,11 @@ public class UserBalloonManager {
     @Getter
     private UserBalloonPufferfish pufferfish;
     private final ArmorStand modelEntity;
+    /**
+     * giraffe: 줄 고정점 — 등 뒤 어깨 높이의 보이지 않는 작은 표식 거치대 (10-23 사용자: 줄이 손에서 나와 몸 앞을 가로질렀다).
+     * 사람 대신 이 엔티티에 줄을 묶어 줄이 늘 등 뒤에서 풍선으로 올라간다
+     */
+    private final ArmorStand leashAnchor;
 
     public UserBalloonManager(CosmeticUser user, @NotNull Location location) {
         this.user = user;
@@ -53,6 +60,42 @@ public class UserBalloonManager {
             e.setAI(false);
             e.getPersistentDataContainer().set(HMCCServerUtils.getCosmemeticMobKey(), PersistentDataType.BOOLEAN, true);
         });
+        this.leashAnchor = location.getWorld().spawn(anchorLocation(user, location), ArmorStand.class, (e) -> {
+            e.setInvisible(true);
+            e.setGravity(false);
+            e.setSilent(true);
+            e.setInvulnerable(true);
+            e.setSmall(true);
+            e.setMarker(true);
+            e.setPersistent(false);
+            e.setAI(false);
+            e.getPersistentDataContainer().set(HMCCServerUtils.getCosmemeticMobKey(), PersistentDataType.BOOLEAN, true);
+        });
+    }
+
+    /** giraffe: 줄 고정점 자리 — 몸 뒤 0.3 · 어깨 높이 1.3 (사람 크기 비율) */
+    private static Location anchorLocation(CosmeticUser user, Location base) {
+        Location feet = user.getEntity() != null ? user.getEntity().getLocation() : base;
+        double scale = 1.0;
+        if (user.getPlayer() != null) {
+            AttributeInstance attribute = user.getPlayer().getAttribute(Attribute.SCALE);
+            if (attribute != null) scale = attribute.getValue();
+        }
+        return feet.clone().add(user.behindBody(0, 1.3 * scale, 0.3 * scale));
+    }
+
+    /** giraffe: 줄 고정점을 지금 몸 자리 · 방향으로 옮긴다 */
+    public void moveLeashAnchor(CosmeticUser user) {
+        if (!leashAnchor.isValid() || user.getEntity() == null) return;
+        Location target = anchorLocation(user, user.getEntity().getLocation());
+        if (leashAnchor.getWorld() != target.getWorld() || leashAnchor.getLocation().distanceSquared(target) > 0.0004) {
+            leashAnchor.teleport(target);
+        }
+    }
+
+    /** giraffe: 줄을 묶을 엔티티 — 고정점, 없으면 사람 */
+    public int getLeashHolderId(Entity fallback) {
+        return leashAnchor.isValid() ? leashAnchor.getEntityId() : fallback.getEntityId();
     }
 
     public void spawnModel(@NotNull CosmeticBalloonType cosmeticBalloonType, Color color) {
@@ -119,6 +162,7 @@ public class UserBalloonManager {
         }
 
         modelEntity.remove();
+        leashAnchor.remove();   // giraffe
         cosmeticBalloonType = null;
         MessagesUtil.sendDebugMessages("Balloon Entity Removed");
     }

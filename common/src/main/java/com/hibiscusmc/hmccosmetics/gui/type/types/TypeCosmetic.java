@@ -1,5 +1,6 @@
 package com.hibiscusmc.hmccosmetics.gui.type.types;
 
+import com.hibiscusmc.hmccosmetics.gui.WornMask;
 import com.hibiscusmc.hmccosmetics.cosmetic.CosmeticSlot;
 import com.hibiscusmc.hmccosmetics.cosmetic.types.CosmeticBackpackType;
 import com.hibiscusmc.hmccosmetics.HMCCosmeticsPlugin;
@@ -158,6 +159,17 @@ public class TypeCosmetic extends Type {
 
     @Override
     public ItemStack setItem(@NotNull Player viewer, @NotNull CosmeticHolder cosmeticHolder, @NotNull ConfigurationNode config, @NotNull ItemStack itemStack, int slot) {
+        ItemStack result = setItemBase(viewer, cosmeticHolder, config, itemStack, slot);
+        // giraffe: 지금 착용 중인 치장 칸에 쿨타임 덮개 (본인이 보는 메뉴만)
+        if (config.node("cosmetic").virtual() || !(cosmeticHolder instanceof CosmeticUser user) || !viewer.getUniqueId().equals(user.getUniqueId())) {
+            return result;
+        }
+        Cosmetic cosmetic = Cosmetics.getCosmetic(config.node("cosmetic").getString());
+        if (cosmetic == null) return result;
+        return WornMask.apply(viewer, result, cosmetic.getId(), cosmeticHolder.hasCosmeticInSlot(cosmetic));
+    }
+
+    private ItemStack setItemBase(@NotNull Player viewer, @NotNull CosmeticHolder cosmeticHolder, @NotNull ConfigurationNode config, @NotNull ItemStack itemStack, int slot) {
         if (itemStack.hasItemMeta()) itemStack.setItemMeta(processItemMeta(viewer, itemStack.getItemMeta()));
         else MessagesUtil.sendDebugMessages("ItemStack has no ItemMeta?");
 

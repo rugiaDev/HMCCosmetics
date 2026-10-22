@@ -1,5 +1,6 @@
 package com.hibiscusmc.hmccosmetics.user;
 
+import org.bukkit.entity.LivingEntity;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.hibiscusmc.hmccosmetics.HMCCosmeticsPlugin;
@@ -487,18 +488,34 @@ public class CosmeticUser implements CosmeticHolder {
     }
 
     /**
-     * giraffe: 그 칸 풍선을 띄우는 자리 — 첫 칸은 치장 설정(balloon-offset) 그대로, 둘째 칸부터는 사람 둘레로 돌려 겹치지 않게.
-     * 첫 칸 자리(기본 0.5, 3, 0.5)를 사람 중심 원 위의 점으로 보고, 칸마다 같은 각도씩 돌리고 반지름 1.1 · 0.25 씩 낮춘다.
+     * giraffe: 그 칸 풍선을 띄우는 자리 (사람 발 기준 세상 좌표 차이) — 늘 몸 뒤 (10-23 사용자: 줄이 몸 앞을 가로질러 거슬림).
+     * 몸 방향(body yaw) 기준 뒤로 0.9, 높이는 치장 설정(balloon-offset y, 기본 3). 칸이 여럿이면 좌우로 벌리고 칸마다 0.25 씩 낮춘다
+     * (2칸 = 오른쪽 뒤 · 왼쪽 뒤 대칭).
      */
     public @NotNull Vector balloonOffset(@NotNull CosmeticBalloonType type, @Nullable CosmeticSlot slot) {
-        Vector base = type.getBalloonOffset().clone();
+        Vector base = type.getBalloonOffset();
         int index = slot == null ? 0 : Math.max(0, CosmeticSlot.BALLOON_SLOTS.indexOf(slot));
-        if (index == 0) return base;
-        int count = Math.max(2, CosmeticSlot.BALLOON_SLOTS.size());
-        double startAngle = Math.atan2(base.getZ(), base.getX());
-        double angle = startAngle + 2 * Math.PI * index / count;
-        double radius = Math.max(1.1, Math.hypot(base.getX(), base.getZ()));
-        return new Vector(Math.cos(angle) * radius, base.getY() - 0.25 * index, Math.sin(angle) * radius);
+        int count = CosmeticSlot.BALLOON_SLOTS.size();
+        double side = count <= 1 ? 0.45 : 0.45 * (1.0 - 2.0 * index / (count - 1));
+        return behindBody(side, base.getY() - 0.25 * index, BALLOON_BACK);
+    }
+
+    /** giraffe: 풍선이 몸 뒤로 떨어진 거리 */
+    private static final double BALLOON_BACK = 0.9;
+
+    /**
+     * giraffe: 몸 방향 기준 (오른쪽 side, 위 up, 뒤 back) → 세상 좌표 차이.
+     * 마인크래프트 방향: 앞 = (-sin yaw, 0, cos yaw), 오른쪽 = (-cos yaw, 0, -sin yaw)
+     */
+    public @NotNull Vector behindBody(double side, double up, double back) {
+        Entity entity = getEntity();
+        float yaw = entity instanceof LivingEntity living ? living.getBodyYaw() : (entity == null ? 0f : entity.getLocation().getYaw());
+        double radians = Math.toRadians(yaw);
+        double forwardX = -Math.sin(radians);
+        double forwardZ = Math.cos(radians);
+        double rightX = -Math.cos(radians);
+        double rightZ = -Math.sin(radians);
+        return new Vector(rightX * side - forwardX * back, up, rightZ * side - forwardZ * back);
     }
 
     public @Nullable UserWardrobeManager getWardrobeManager() {
@@ -884,7 +901,7 @@ public class CosmeticUser implements CosmeticHolder {
                 UserBalloonManager manager = balloonManagers.get(slot);
                 if (manager == null || !(getCosmetic(slot) instanceof CosmeticBalloonType balloonType)) continue;
                 manager.addPlayerToModel(this, balloonType);
-                HMCCPacketManager.sendLeashPacket(manager.getPufferfishBalloonId(), getPlayer().getEntityId(), viewer);
+                HMCCPacketManager.sendLeashPacket(manager.getPufferfishBalloonId(), manager.getLeashHolderId(getPlayer()), viewer);   // giraffe: 줄은 등 뒤 고정점
             }
         }
         if (hasBackpackCosmetic()) {

@@ -182,6 +182,7 @@ public class Menu {
         });
 
         gui.setCloseGuiAction(event -> {
+            WornMask.clear(viewer);   // giraffe: 착용 중 덮개 풀기
             if (cosmeticHolder instanceof CosmeticUser user) {
                 PlayerMenuCloseEvent closeEvent = new PlayerMenuCloseEvent(user, this, event.getReason());
                 Bukkit.getScheduler().runTask(HMCCosmeticsPlugin.getInstance(), () -> Bukkit.getPluginManager().callEvent(closeEvent));
