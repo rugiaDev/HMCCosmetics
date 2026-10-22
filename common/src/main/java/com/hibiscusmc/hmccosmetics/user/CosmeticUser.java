@@ -717,6 +717,10 @@ public class CosmeticUser implements CosmeticHolder {
                 && manager.getAreaEffectEntityId() != null && !manager.getAreaEffectEntityId().isEmpty();
             ids.add(firstPerson ? manager.getAreaEffectEntityId().get(0) : manager.getFirstArmorStandId());
         }
+        // giraffe: 풍선 줄 고정점도 사람 위에 태운 것으로 보낸다 (손님 화면에만 있는 거치대)
+        for (UserBalloonManager balloonManager : balloonManagers.values()) {
+            ids.add(balloonManager.getPufferfish().getLeashAnchorEntityId());
+        }
         Entity entity = getEntity();
         if (entity != null) {
             for (Entity passenger : entity.getPassengers()) ids.add(passenger.getEntityId());

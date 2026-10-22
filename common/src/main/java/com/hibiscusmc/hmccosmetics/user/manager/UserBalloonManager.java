@@ -25,6 +25,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -38,16 +39,14 @@ public class UserBalloonManager {
     @Getter
     private UserBalloonPufferfish pufferfish;
     private final ArmorStand modelEntity;
-    /**
-     * giraffe: 줄 고정점 — 사람 위에 태운 보이지 않는 작은 표식 거치대 (10-23 사용자: 줄이 손에서 나와 몸 앞을 가로질렀다).
-     * 사람 대신 이 엔티티에 줄을 묶어 줄이 머리 위 뒤쪽에서 풍선으로 올라간다. 처음에는 서버가 순간이동으로 따라가게 했더니
-     * 손님 쪽 이동보다 늦어 줄이 몸에서 떨어져 보였다(10-23 사용자) → 사람 위에 태워 손님이 몸과 같은 틱에 같이 옮기게 했다
-     */
-    private final ArmorStand leashAnchor;
 
     public UserBalloonManager(CosmeticUser user, @NotNull Location location) {
         this.user = user;
-        this.pufferfish = new UserBalloonPufferfish(user.getUniqueId(), NMSHandlers.getHandler().getUtilHandler().getNextEntityId(location.getWorld()), UUID.randomUUID());
+        // giraffe: 줄 고정점은 손님 화면에만 있는 거치대 — 풍선 물고기와 같이 띄우고 같이 지운다 (UserBalloonPufferfish)
+        this.pufferfish = new UserBalloonPufferfish(user.getUniqueId(),
+                NMSHandlers.getHandler().getUtilHandler().getNextEntityId(location.getWorld()),
+                NMSHandlers.getHandler().getUtilHandler().getNextEntityId(location.getWorld()),
+                UUID.randomUUID());
         this.modelEntity = location.getWorld().spawn(location, ArmorStand.class, (e) -> {
             e.setInvisible(true);
             e.setGravity(false);
@@ -59,33 +58,27 @@ public class UserBalloonManager {
             e.setAI(false);
             e.getPersistentDataContainer().set(HMCCServerUtils.getCosmemeticMobKey(), PersistentDataType.BOOLEAN, true);
         });
-        this.leashAnchor = location.getWorld().spawn(location, ArmorStand.class, (e) -> {
-            e.setInvisible(true);
-            e.setGravity(false);
-            e.setSilent(true);
-            e.setInvulnerable(true);
-            e.setSmall(true);
-            e.setMarker(true);
-            e.setPersistent(false);
-            e.setAI(false);
-            e.getPersistentDataContainer().set(HMCCServerUtils.getCosmemeticMobKey(), PersistentDataType.BOOLEAN, true);
-        });
-        if (user.getEntity() != null) user.getEntity().addPassenger(leashAnchor);
     }
 
-    /** giraffe: 줄 고정점이 사람에게서 내려졌으면(순간이동 · 차원 이동 · 다른 플러그인) 사람 자리로 옮겨 다시 태운다 */
-    public void moveLeashAnchor(CosmeticUser user) {
+    /**
+     * giraffe: 줄 고정점을 사람 위에 태운 것으로 보낸다 — 손님 화면에서만 태우므로 서버의 사람은 탑승자가 없다.
+     * 서버에 진짜로 태우면 사람이 탑승자를 가진 것이 되어 다른 월드로 가는 순간이동(마을 · 워프 · 스폰)이 전부 실패한다(10-23).
+     * 사람의 탑승자 목록은 한 번에 통째로 바뀌므로 등 치장 거치대 · 다른 풍선 고정점까지 한 목록으로 보낸다
+     */
+    public void mountLeashAnchor(CosmeticUser user, List<Player> sendTo) {
         Entity owner = user.getEntity();
-        if (!leashAnchor.isValid() || owner == null) return;
-        if (owner.equals(leashAnchor.getVehicle())) return;
-        if (leashAnchor.isInsideVehicle()) leashAnchor.leaveVehicle();
-        leashAnchor.teleport(owner.getLocation());
-        owner.addPassenger(leashAnchor);
+        if (owner == null || sendTo.isEmpty()) return;
+        List<Player> others = new ArrayList<>(sendTo);
+        Player self = user.getPlayer();
+        if (self != null && others.remove(self)) {
+            HMCCPacketManager.sendRidingPacket(owner.getEntityId(), user.getBackpackPassengerIds(true), List.of(self));
+        }
+        if (!others.isEmpty()) HMCCPacketManager.sendRidingPacket(owner.getEntityId(), user.getBackpackPassengerIds(false), others);
     }
 
-    /** giraffe: 줄을 묶을 엔티티 — 고정점, 없으면 사람 */
+    /** giraffe: 줄을 묶을 엔티티 — 손님 화면의 줄 고정점 */
     public int getLeashHolderId(Entity fallback) {
-        return leashAnchor.isValid() ? leashAnchor.getEntityId() : fallback.getEntityId();
+        return pufferfish.getLeashAnchorEntityId();
     }
 
     public void spawnModel(@NotNull CosmeticBalloonType cosmeticBalloonType, Color color) {
@@ -152,7 +145,6 @@ public class UserBalloonManager {
         }
 
         modelEntity.remove();
-        leashAnchor.remove();   // giraffe
         cosmeticBalloonType = null;
         MessagesUtil.sendDebugMessages("Balloon Entity Removed");
     }

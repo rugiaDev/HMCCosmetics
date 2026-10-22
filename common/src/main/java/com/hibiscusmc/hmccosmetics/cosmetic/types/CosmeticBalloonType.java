@@ -76,7 +76,7 @@ public class CosmeticBalloonType extends Cosmetic implements CosmeticUpdateBehav
             List<Player> sendTo = userBalloonManager.getPufferfish().refreshViewers(newLocation);
             if (sendTo.isEmpty()) return;
             userBalloonManager.getPufferfish().spawnPufferfish(newLocation, sendTo);
-            userBalloonManager.moveLeashAnchor(user);   // giraffe: 줄은 등 뒤 고정점에서
+            userBalloonManager.mountLeashAnchor(user, sendTo);   // giraffe: 줄 고정점을 새로 보는 사람 화면에서 사람 위에 태운다
             HMCCPacketManager.sendLeashPacket(userBalloonManager.getPufferfishBalloonId(), userBalloonManager.getLeashHolderId(entity), sendTo);
         }
     }
@@ -114,7 +114,6 @@ public class CosmeticBalloonType extends Cosmetic implements CosmeticUpdateBehav
         MessagesUtil.sendDebugMessages("Balloon location set to " + newLocation);
 
         HMCCPacketManager.sendTeleportPacket(userBalloonManager.getPufferfishBalloonId(), newLocation, false, viewers);
-        userBalloonManager.moveLeashAnchor(user);   // giraffe: 줄은 등 뒤 고정점에서
         HMCCPacketManager.sendLeashPacket(userBalloonManager.getPufferfishBalloonId(), userBalloonManager.getLeashHolderId(entity), viewers);
     }
 
