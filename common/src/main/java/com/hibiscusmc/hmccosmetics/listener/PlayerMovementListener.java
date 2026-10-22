@@ -20,12 +20,12 @@ import java.util.UUID;
 
 @Slf4j
 public class PlayerMovementListener implements Listener {
-    private static final List<CosmeticSlot> MOVEMENT_COSMETICS = List.of(
-        CosmeticSlot.BACKPACK,
-        CosmeticSlot.BACKPACK_2,   // giraffe: 등 치장 칸 3개
-        CosmeticSlot.BACKPACK_3,
-        CosmeticSlot.BALLOON
-    );
+    /** giraffe: 움직임을 따라가는 칸 — 바디 치장 칸 전부(설정 수) + 풍선 */
+    private static List<CosmeticSlot> movementCosmetics() {
+        List<CosmeticSlot> slots = new java.util.ArrayList<>(CosmeticSlot.BACKPACK_SLOTS);
+        slots.add(CosmeticSlot.BALLOON);
+        return slots;
+    }
 
     // Player Id -> Small Location
     private final Map<UUID, SmallLocation> locations = new HashMap<>();
@@ -43,7 +43,7 @@ public class PlayerMovementListener implements Listener {
             return;
         }
 
-        for(final CosmeticSlot slot : MOVEMENT_COSMETICS) {
+        for(final CosmeticSlot slot : movementCosmetics()) {
             user.updateMovementCosmetic(slot, ev.getFrom(), ev.getTo());
         }
     }

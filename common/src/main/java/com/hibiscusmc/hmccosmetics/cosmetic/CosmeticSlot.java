@@ -19,15 +19,28 @@ public class CosmeticSlot {
     public static final CosmeticSlot MAINHAND = register("MAINHAND");
     public static final CosmeticSlot OFFHAND = register("OFFHAND");
     public static final CosmeticSlot BACKPACK = register("BACKPACK");
-    // giraffe: 바디 치장 칸 2 · 3 — 등 치장(CosmeticBackpackType)을 한 사람이 최대 3개 착용
-    public static final CosmeticSlot BACKPACK_2 = register("BACKPACK_2");
-    public static final CosmeticSlot BACKPACK_3 = register("BACKPACK_3");
-    /** giraffe: 등 치장이 들어갈 수 있는 칸 (앞에서부터 채운다) */
-    public static final java.util.List<CosmeticSlot> BACKPACK_SLOTS = java.util.List.of(BACKPACK, BACKPACK_2, BACKPACK_3);
+    /** giraffe: 바디 치장 칸 수 상한 — config.yml cosmetic-settings.giraffe-body-slots 는 1 ~ 이 값 */
+    public static final int MAX_BACKPACK_SLOTS = 9;
+    /**
+     * giraffe: 등 치장(바디 치장)이 들어갈 수 있는 칸 (앞에서부터 채운다). BACKPACK · BACKPACK_2 · BACKPACK_3 …
+     * 칸 수는 설정을 읽을 때 {@link #setBackpackSlotCount} 로 정한다 (기본 3).
+     */
+    public static volatile java.util.List<CosmeticSlot> BACKPACK_SLOTS = java.util.List.of(BACKPACK);
 
     /** giraffe: 등 치장 칸인가 */
     public static boolean isBackpack(@org.jetbrains.annotations.Nullable CosmeticSlot slot) {
         return slot != null && BACKPACK_SLOTS.contains(slot);
+    }
+
+    /** giraffe: 바디 치장 칸 수를 정한다 (1 ~ {@link #MAX_BACKPACK_SLOTS}). 칸 BACKPACK_2 … 를 필요한 만큼 등록한다 */
+    public static void setBackpackSlotCount(int count) {
+        int clamped = Math.max(1, Math.min(MAX_BACKPACK_SLOTS, count));
+        java.util.List<CosmeticSlot> slots = new java.util.ArrayList<>();
+        slots.add(BACKPACK);
+        for (int index = 2; index <= clamped; index++) {
+            slots.add(REGISTRY.computeIfAbsent("BACKPACK_" + index, CosmeticSlot::new));
+        }
+        BACKPACK_SLOTS = java.util.List.copyOf(slots);
     }
     public static final CosmeticSlot BALLOON = register("BALLOON");
 

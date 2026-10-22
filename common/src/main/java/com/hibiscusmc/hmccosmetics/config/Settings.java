@@ -242,6 +242,8 @@ public class Settings {
         balloonHeadForward = cosmeticSettings.node(COSMETIC_BALLOON_HEAD_FORWARD_PATH).getBoolean(false);
         balloonDefaultShowLead = cosmeticSettings.node(COSMETIC_BALLOON_DEFAULT_SHOW_LEAD_PATH).getBoolean(true);
         backpackPreventDarkness = cosmeticSettings.node(BACKPACK_PREVENT_DARKNESS_PATH).getBoolean(true);
+        // giraffe: 바디 치장(등 치장) 동시 착용 수 — 기본 3
+        com.hibiscusmc.hmccosmetics.cosmetic.CosmeticSlot.setBackpackSlotCount(cosmeticSettings.node("giraffe-body-slots").getInt(3));
 
         ConfigurationNode menuSettings = source.node(MENU_SETTINGS_PATH);
 
