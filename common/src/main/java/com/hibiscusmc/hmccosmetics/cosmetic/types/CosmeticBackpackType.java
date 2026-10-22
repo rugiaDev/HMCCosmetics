@@ -53,7 +53,7 @@ public class CosmeticBackpackType extends Cosmetic implements CosmeticUpdateBeha
         Location entityLocation = entity.getLocation();
         Location loc = entityLocation.clone().add(0, 2, 0);
 
-        UserBackpackManager backpackManager = user.getUserBackpackManager();
+        UserBackpackManager backpackManager = user.getUserBackpackManager(user.slotOf(this));   // giraffe: 칸마다 담당
         if(backpackManager == null) return;
 
         UserEntity entityManager = backpackManager.getEntityManager();
@@ -76,7 +76,7 @@ public class CosmeticBackpackType extends Cosmetic implements CosmeticUpdateBeha
             if (user.getPlayer() != null) {
                 AttributeInstance scaleAttribute = user.getPlayer().getAttribute(Attribute.SCALE);
                 if (scaleAttribute != null) {
-                    newViewerBundle.add(packetBuilder.buildEntityAttributePacket(user.getUserBackpackManager().getFirstArmorStandId(), Attribute.SCALE, scaleAttribute.getValue()));
+                    newViewerBundle.add(packetBuilder.buildEntityAttributePacket(firstArmorStandId, Attribute.SCALE, scaleAttribute.getValue()));
                     /*
                     ArrayList<Integer> particleCloud = backpackManager.getAreaEffectEntityId();
                     for (int i : particleCloud) {
@@ -93,27 +93,23 @@ public class CosmeticBackpackType extends Cosmetic implements CosmeticUpdateBeha
                 .toArray();
         boolean hasExistingPassengers = existingPassengers.length > 0;
 
+        // giraffe: 진짜 탑승자는 사람 위에 그대로 두고, 등 치장 거치대 전부를 한 목록으로 태운다 (칸마다 보내면 서로 지운다)
+        int[] allPassengers = user.getBackpackPassengerIds(false);
         if (Settings.isBackpackForceRidingEnabled()) {
-            HMCCPacketManager.sendRidingPacket(entity.getEntityId(), firstArmorStandId, entityManager.getViewers());
-            if (hasExistingPassengers) HMCCPacketManager.sendRidingPacket(firstArmorStandId, existingPassengers, entityManager.getViewers());
+            HMCCPacketManager.sendRidingPacket(entity.getEntityId(), allPassengers, entityManager.getViewers());
         } else {
-            newViewerBundle.add(packetBuilder.buildEntityMountPacket(entity.getEntityId(), new int[]{firstArmorStandId}));
-            if (hasExistingPassengers) newViewerBundle.add(packetBuilder.buildEntityMountPacket(firstArmorStandId, existingPassengers));
+            newViewerBundle.add(packetBuilder.buildEntityMountPacket(entity.getEntityId(), allPassengers));
         }
 
         if (isFirstPersonCompadible() && !user.isInWardrobe() && user.getPlayer() != null) {
             final ArrayList<PacketWrapper> ownerBundle = new ArrayList<>();
 
             ArrayList<Integer> particleCloud = backpackManager.getAreaEffectEntityId();
-            for (int i = 0; i < particleCloud.size(); i++) {
-                if (i == 0) {
-                    ownerBundle.add(packetBuilder.buildEntityMountPacket(entity.getEntityId(), new int[]{particleCloud.get(i)}));
-                } else {
-                    ownerBundle.add(packetBuilder.buildEntityMountPacket(particleCloud.get(i - 1), new int[]{particleCloud.get(i)}));
-                }
+            for (int i = 1; i < particleCloud.size(); i++) {
+                ownerBundle.add(packetBuilder.buildEntityMountPacket(particleCloud.get(i - 1), new int[]{particleCloud.get(i)}));
             }
             ownerBundle.add(packetBuilder.buildEntityMountPacket(particleCloud.getLast(), new int[]{firstArmorStandId}));
-            if (hasExistingPassengers) ownerBundle.add(packetBuilder.buildEntityMountPacket(firstArmorStandId, existingPassengers));
+            ownerBundle.add(packetBuilder.buildEntityMountPacket(entity.getEntityId(), user.getBackpackPassengerIds(true)));   // giraffe
             if (!user.isHidden()) {
                 ownerBundle.add(packetBuilder.buildEntityEquipmentSlotUpdatePacket(firstArmorStandId, Map.of(EquipmentSlot.HEAD, user.getUserCosmeticItem(this, firstPersonBackpack))));
             }
@@ -136,7 +132,7 @@ public class CosmeticBackpackType extends Cosmetic implements CosmeticUpdateBeha
         Location entityLocation = entity.getLocation();
         Location loc = entityLocation.clone().add(0, 2, 0);
 
-        UserBackpackManager backpackManager = user.getUserBackpackManager();
+        UserBackpackManager backpackManager = user.getUserBackpackManager(user.slotOf(this));   // giraffe: 칸마다 담당
         if(backpackManager == null) return;
 
         UserEntity entityManager = backpackManager.getEntityManager();

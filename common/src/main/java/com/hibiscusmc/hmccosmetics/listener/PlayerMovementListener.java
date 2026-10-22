@@ -22,6 +22,8 @@ import java.util.UUID;
 public class PlayerMovementListener implements Listener {
     private static final List<CosmeticSlot> MOVEMENT_COSMETICS = List.of(
         CosmeticSlot.BACKPACK,
+        CosmeticSlot.BACKPACK_2,   // giraffe: 등 치장 칸 3개
+        CosmeticSlot.BACKPACK_3,
         CosmeticSlot.BALLOON
     );
 

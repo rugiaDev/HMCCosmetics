@@ -164,7 +164,7 @@ public class PlayerGameListener implements Listener {
         if (!(event.getEntity() instanceof Player player)) return;
         CosmeticUser user = CosmeticUsers.getUser(player);
         if (user == null || user.isInWardrobe()) return;
-        if (!user.hasCosmeticInSlot(CosmeticSlot.BACKPACK)) return;
+        if (!user.hasBackpackCosmetic()) return;   // giraffe: 등 치장 칸 3개
         Pose pose = event.getPose();
         if (pose.equals(Pose.STANDING)) {
             user.setHidingBackpackPose(false);
@@ -172,7 +172,7 @@ public class PlayerGameListener implements Listener {
             ItemStack currentItem = player.getInventory().getItemInMainHand();
             if (currentItem.containsEnchantment(Enchantment.RIPTIDE)) return;
             if (!user.isBackpackSpawned()) {
-                user.spawnBackpack((CosmeticBackpackType) user.getCosmetic(CosmeticSlot.BACKPACK));
+                user.respawnBackpack();   // giraffe: 칸마다 다시 그린다
             }
             return;
         }
@@ -269,14 +269,13 @@ public class PlayerGameListener implements Listener {
 
         // #84, #214 Riptides mess with backpacks, additional logic to reapply cosmetic backpack
         final ItemStack currentItem = event.getPlayer().getInventory().getItem(event.getNewSlot());
-        if (user.hasCosmeticInSlot(CosmeticSlot.BACKPACK)) {
+        if (user.hasBackpackCosmetic()) {   // giraffe: 등 치장 칸 3개
             if (isItemHasRiptide(currentItem)) {
                 user.despawnBackpack();
             } else {
                 if (user.isHidingBackpackPose()) return;
                 if (!user.isBackpackSpawned()) {
-                    final Cosmetic cosmetic = user.getCosmetic(CosmeticSlot.BACKPACK);
-                    user.spawnBackpack((CosmeticBackpackType) cosmetic);
+                    user.respawnBackpack();
                 }
             }
         }

@@ -167,14 +167,17 @@ public class UserWardrobeManager {
             viewerPackets.add(packetBuilder.buildEntityRotatePacket(NPC_ID, npcLocation, true));
 
             // Misc
-            if (user.hasCosmeticInSlot(CosmeticSlot.BACKPACK)) {
+            if (user.hasBackpackCosmetic()) {   // giraffe: 등 치장 칸 3개 — 옷장 인형 위에 전부 태운다
                 // Maybe null as backpack maybe despawned before entering
-                if (user.getUserBackpackManager() == null) user.respawnBackpack();
+                if (!user.isBackpackSpawned()) user.respawnBackpack();
                 if (user.isBackpackSpawned()) {
-                    user.getUserBackpackManager().getEntityManager().teleport(npcLocation.clone().add(0, 2, 0));
-
-                    viewerPackets.add(packetBuilder.buildEntityEquipmentSlotUpdatePacket(user.getUserBackpackManager().getFirstArmorStandId(), Map.of(EquipmentSlot.HEAD, user.getUserCosmeticItem(user.getCosmetic(CosmeticSlot.BACKPACK)))));
-                    viewerPackets.add(packetBuilder.buildEntityMountPacket(NPC_ID, new int[]{user.getUserBackpackManager().getFirstArmorStandId()}));
+                    java.util.List<Integer> standIds = new java.util.ArrayList<>();
+                    for (UserBackpackManager backpack : user.getUserBackpackManagers()) {
+                        backpack.getEntityManager().teleport(npcLocation.clone().add(0, 2, 0));
+                        viewerPackets.add(packetBuilder.buildEntityEquipmentSlotUpdatePacket(backpack.getFirstArmorStandId(), Map.of(EquipmentSlot.HEAD, user.getUserCosmeticItem(user.getCosmetic(backpack.getSlot())))));
+                        standIds.add(backpack.getFirstArmorStandId());
+                    }
+                    viewerPackets.add(packetBuilder.buildEntityMountPacket(NPC_ID, standIds.stream().mapToInt(Integer::intValue).toArray()));
                 }
             }
 
@@ -279,7 +282,7 @@ public class UserWardrobeManager {
             }
             user.showPlayer();
 
-            if (user.hasCosmeticInSlot(CosmeticSlot.BACKPACK)) {
+            if (user.hasBackpackCosmetic()) {   // giraffe: 등 치장 칸 3개
                 user.respawnBackpack();
                 //PacketManager.ridingMountPacket(player.getEntityId(), VIEWER.getBackpackEntity().getEntityId(), viewer);
             }
@@ -347,11 +350,15 @@ public class UserWardrobeManager {
                     HMCCPacketManager.equipmentSlotUpdate(NPC_ID, user, slot, viewer);
                 }
 
-                if (user.hasCosmeticInSlot(CosmeticSlot.BACKPACK) && user.getUserBackpackManager() != null) {
-                    HMCCPacketManager.sendTeleportPacket(user.getUserBackpackManager().getFirstArmorStandId(), location, false, viewer);
-                    packetBuilder.buildEntityMountPacket(NPC_ID, new int[]{user.getUserBackpackManager().getFirstArmorStandId()}).sendPacket(viewer);
-                    user.getUserBackpackManager().getEntityManager().setRotation(nextyaw);
-                    HMCCPacketManager.sendEntityDestroyPacket(user.getUserBackpackManager().getFirstArmorStandId(), outsideViewers);
+                if (user.hasBackpackCosmetic() && user.isBackpackSpawned()) {   // giraffe: 등 치장 칸 3개
+                    java.util.List<Integer> standIds = new java.util.ArrayList<>();
+                    for (UserBackpackManager backpack : user.getUserBackpackManagers()) {
+                        HMCCPacketManager.sendTeleportPacket(backpack.getFirstArmorStandId(), location, false, viewer);
+                        backpack.getEntityManager().setRotation(nextyaw);
+                        HMCCPacketManager.sendEntityDestroyPacket(backpack.getFirstArmorStandId(), outsideViewers);
+                        standIds.add(backpack.getFirstArmorStandId());
+                    }
+                    packetBuilder.buildEntityMountPacket(NPC_ID, standIds.stream().mapToInt(Integer::intValue).toArray()).sendPacket(viewer);
                 }
 
                 if (user.hasCosmeticInSlot(CosmeticSlot.BALLOON) && user.isBalloonSpawned()) {

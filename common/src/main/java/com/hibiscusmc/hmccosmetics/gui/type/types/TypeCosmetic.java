@@ -1,5 +1,7 @@
 package com.hibiscusmc.hmccosmetics.gui.type.types;
 
+import com.hibiscusmc.hmccosmetics.cosmetic.CosmeticSlot;
+import com.hibiscusmc.hmccosmetics.cosmetic.types.CosmeticBackpackType;
 import com.hibiscusmc.hmccosmetics.HMCCosmeticsPlugin;
 import com.hibiscusmc.hmccosmetics.config.Settings;
 import com.hibiscusmc.hmccosmetics.cosmetic.Cosmetic;
@@ -66,7 +68,14 @@ public class TypeCosmetic extends Type {
         }
 
         boolean isUnEquippingCosmetic = false;
-        if (cosmeticHolder.getCosmetic(cosmetic.getSlot()) == cosmetic) isUnEquippingCosmetic = true;
+        if (cosmeticHolder.hasCosmeticInSlot(cosmetic)) isUnEquippingCosmetic = true;   // giraffe: 등 치장은 칸 3개 중 어디든
+
+        // giraffe: 등 치장 칸 3개가 다 찼으면 바꾸지 않고 안내만
+        if (!isUnEquippingCosmetic && cosmetic instanceof CosmeticBackpackType
+            && cosmeticHolder instanceof CosmeticUser slotUser && slotUser.isBackpackSlotsFull(cosmetic)) {
+            MessagesUtil.sendMessage(viewer, "backpack-slots-full");
+            return;
+        }
 
         String dyeClick = Settings.getCosmeticDyeClickType();
         String requiredClick;
@@ -124,7 +133,10 @@ public class TypeCosmetic extends Type {
             e.printStackTrace();
         }
         // Fixes issue with offhand cosmetics not appearing. Yes, I know this is dumb
-        Runnable run = () -> cosmeticHolder.updateCosmetic(cosmetic.getSlot());
+        Runnable run = () -> {
+            CosmeticSlot equippedSlot = cosmeticHolder.slotOf(cosmetic);   // giraffe: 등 치장은 들어간 칸
+            cosmeticHolder.updateCosmetic(equippedSlot != null ? equippedSlot : cosmetic.getSlot());
+        };
         if (cosmetic instanceof CosmeticArmorType) {
             if (((CosmeticArmorType) cosmetic).getEquipSlot().equals(EquipmentSlot.OFF_HAND)) {
                 Bukkit.getScheduler().runTaskLater(HMCCosmeticsPlugin.getInstance(), run, 1);

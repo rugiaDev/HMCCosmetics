@@ -57,7 +57,8 @@ public class CosmeticUser implements CosmeticHolder {
     private UserWardrobeManager userWardrobeManager;
     private UserBalloonManager userBalloonManager;
     @Getter @Nullable
-    private UserBackpackManager userBackpackManager;
+    // giraffe: 등 치장 칸마다 그리기 담당 하나 (원래는 사람마다 하나라 등 치장을 하나만 그렸다)
+    private final java.util.LinkedHashMap<CosmeticSlot, UserBackpackManager> backpackManagers = new java.util.LinkedHashMap<>();
 
     // Cosmetic Settings/Toggles
     private final ArrayList<HiddenReason> hiddenReason = new ArrayList<>();
@@ -238,17 +239,18 @@ public class CosmeticUser implements CosmeticHolder {
         }
         cosmetic = event.getCosmetic();
         // Internal
-        if (playerCosmetics.containsKey(cosmetic.getSlot())) {
-            removeCosmeticSlot(cosmetic.getSlot());
+        // giraffe: 등 치장은 이미 착용 중인 칸 → 빈 칸(1 → 2 → 3) → 다 차 있으면 1번 칸을 바꾼다
+        final CosmeticSlot targetSlot = cosmetic instanceof CosmeticBackpackType ? pickBackpackSlot(cosmetic) : cosmetic.getSlot();
+        if (playerCosmetics.containsKey(targetSlot)) {
+            removeCosmeticSlot(targetSlot);
         }
 
-        playerCosmetics.put(cosmetic.getSlot(), cosmetic);
-        if (color != null) colors.put(cosmetic.getSlot(), color);
-        MessagesUtil.sendDebugMessages("addPlayerCosmetic[id=" + cosmetic.getId() + "]");
+        playerCosmetics.put(targetSlot, cosmetic);
+        if (color != null) colors.put(targetSlot, color);
+        MessagesUtil.sendDebugMessages("addPlayerCosmetic[id=" + cosmetic.getId() + ",slot=" + targetSlot + "]");
         if (!isHidden()) {
-            if (cosmetic.getSlot() == CosmeticSlot.BACKPACK) {
-                CosmeticBackpackType backpackType = (CosmeticBackpackType) cosmetic;
-                spawnBackpack(backpackType);
+            if (cosmetic instanceof CosmeticBackpackType backpackType) {
+                spawnBackpack(backpackType, targetSlot);
                 MessagesUtil.sendDebugMessages("addPlayerCosmetic[spawnBackpack,id=" + cosmetic.getId() + "]");
             }
             if (cosmetic.getSlot() == CosmeticSlot.BALLOON) {
@@ -286,8 +288,8 @@ public class CosmeticUser implements CosmeticHolder {
             return;
         }
         // Internal
-        if (slot == CosmeticSlot.BACKPACK) {
-            despawnBackpack();
+        if (CosmeticSlot.isBackpack(slot)) {
+            despawnBackpack(slot);
         }
         if (slot == CosmeticSlot.BALLOON) {
             despawnBalloon();
@@ -456,8 +458,9 @@ public class CosmeticUser implements CosmeticHolder {
 
             item.setItemMeta(itemMeta);
 
-            if (colors.containsKey(cosmetic.getSlot())) {
-                Color color = colors.get(cosmetic.getSlot());
+            CosmeticSlot colorSlot = slotOf(cosmetic) != null ? slotOf(cosmetic) : cosmetic.getSlot();   // giraffe: 등 치장 2 · 3 칸
+            if (colors.containsKey(colorSlot)) {
+                Color color = colors.get(colorSlot);
                 item = NMSHandlers.getHandler().getUtilHandler().setColor(item, color);
             }
         }
@@ -566,19 +569,98 @@ public class CosmeticUser implements CosmeticHolder {
     }
 
     public void spawnBackpack(CosmeticBackpackType cosmeticBackpackType) {
-        if (this.userBackpackManager != null) return;
-        this.userBackpackManager = new UserBackpackManager(this);
-        userBackpackManager.spawnBackpack(cosmeticBackpackType);
+        CosmeticSlot slot = slotOf(cosmeticBackpackType);
+        spawnBackpack(cosmeticBackpackType, slot != null ? slot : CosmeticSlot.BACKPACK);
+    }
+
+    /** giraffe: 그 칸의 등 치장을 그린다 */
+    public void spawnBackpack(CosmeticBackpackType cosmeticBackpackType, CosmeticSlot slot) {
+        if (backpackManagers.containsKey(slot)) return;
+        UserBackpackManager manager = new UserBackpackManager(this, slot);
+        backpackManagers.put(slot, manager);
+        manager.spawnBackpack(cosmeticBackpackType);
     }
 
     public void despawnBackpack() {
-        if (userBackpackManager == null) return;
-        userBackpackManager.despawnBackpack();
-        userBackpackManager = null;
+        for (CosmeticSlot slot : List.copyOf(backpackManagers.keySet())) despawnBackpack(slot);
+    }
+
+    /** giraffe: 그 칸의 등 치장만 치운다 */
+    public void despawnBackpack(CosmeticSlot slot) {
+        UserBackpackManager manager = backpackManagers.remove(slot);
+        if (manager == null) return;
+        manager.despawnBackpack();
     }
 
     public boolean isBackpackSpawned() {
-        return this.userBackpackManager != null;
+        return !backpackManagers.isEmpty();
+    }
+
+    /** giraffe: 첫 번째로 그려진 등 치장 담당 (옛 API — 칸 하나일 때와 같게) */
+    public @Nullable UserBackpackManager getUserBackpackManager() {
+        return backpackManagers.isEmpty() ? null : backpackManagers.values().iterator().next();
+    }
+
+    /** giraffe: 그 칸의 등 치장 담당 */
+    public @Nullable UserBackpackManager getUserBackpackManager(@Nullable CosmeticSlot slot) {
+        return slot == null ? null : backpackManagers.get(slot);
+    }
+
+    /** giraffe: 지금 그려진 등 치장 담당 전부 (칸 순서) */
+    public @NotNull java.util.Collection<UserBackpackManager> getUserBackpackManagers() {
+        return List.copyOf(backpackManagers.values());
+    }
+
+    /** giraffe: 등 치장이 하나라도 있나 */
+    public boolean hasBackpackCosmetic() {
+        for (CosmeticSlot slot : CosmeticSlot.BACKPACK_SLOTS) if (playerCosmetics.containsKey(slot)) return true;
+        return false;
+    }
+
+    /** giraffe: 칸 → 치장 (저장용 — 같은 종류 칸이 여러 개라 치장의 기본 칸으로는 가를 수 없다) */
+    public @NotNull java.util.Map<CosmeticSlot, Cosmetic> getCosmeticsBySlot() {
+        return java.util.Map.copyOf(playerCosmetics);
+    }
+
+    /** giraffe: 등 치장을 넣을 칸 — 이미 착용 중이면 그 칸, 아니면 빈 칸, 다 차 있으면 1번 칸 */
+    public @NotNull CosmeticSlot pickBackpackSlot(@NotNull Cosmetic cosmetic) {
+        CosmeticSlot existing = slotOf(cosmetic);
+        if (existing != null) return existing;
+        for (CosmeticSlot slot : CosmeticSlot.BACKPACK_SLOTS) {
+            if (!playerCosmetics.containsKey(slot)) return slot;
+        }
+        return CosmeticSlot.BACKPACK;
+    }
+
+    /** giraffe: 등 치장 칸이 다 찼나 (이 치장을 이미 착용 중이면 false) */
+    public boolean isBackpackSlotsFull(@NotNull Cosmetic cosmetic) {
+        if (slotOf(cosmetic) != null) return false;
+        for (CosmeticSlot slot : CosmeticSlot.BACKPACK_SLOTS) {
+            if (!playerCosmetics.containsKey(slot)) return false;
+        }
+        return true;
+    }
+
+    /**
+     * giraffe: 사람 위에 태울 엔티티 목록 — 등 치장 거치대 전부(칸 순서) 다음에 진짜 탑승자.
+     * 원래는 등 치장 하나의 거치대만 보내서, 칸마다 보내면 서로 지웠다.
+     *
+     * @param owner true 면 본인 화면용 — 1인칭 모델이 있는 등 치장은 거치대 대신 구름 사다리 첫 칸
+     */
+    public int[] getBackpackPassengerIds(boolean owner) {
+        List<Integer> ids = new ArrayList<>();
+        for (Map.Entry<CosmeticSlot, UserBackpackManager> entry : backpackManagers.entrySet()) {
+            UserBackpackManager manager = entry.getValue();
+            Cosmetic cosmetic = playerCosmetics.get(entry.getKey());
+            boolean firstPerson = owner && cosmetic instanceof CosmeticBackpackType type && type.isFirstPersonCompadible()
+                && manager.getAreaEffectEntityId() != null && !manager.getAreaEffectEntityId().isEmpty();
+            ids.add(firstPerson ? manager.getAreaEffectEntityId().get(0) : manager.getFirstArmorStandId());
+        }
+        org.bukkit.entity.Entity entity = getEntity();
+        if (entity != null) {
+            for (org.bukkit.entity.Entity passenger : entity.getPassengers()) ids.add(passenger.getEntityId());
+        }
+        return ids.stream().mapToInt(Integer::intValue).toArray();
     }
 
     public boolean isBalloonSpawned() {
@@ -606,11 +688,12 @@ public class CosmeticUser implements CosmeticHolder {
     }
 
     public void respawnBackpack() {
-        if (!hasCosmeticInSlot(CosmeticSlot.BACKPACK)) return;
-        final Cosmetic cosmetic = getCosmetic(CosmeticSlot.BACKPACK);
+        if (!hasBackpackCosmetic()) return;
         despawnBackpack();
         if (!hiddenReason.isEmpty()) return;
-        spawnBackpack((CosmeticBackpackType) cosmetic);
+        for (CosmeticSlot slot : CosmeticSlot.BACKPACK_SLOTS) {
+            if (getCosmetic(slot) instanceof CosmeticBackpackType backpackType) spawnBackpack(backpackType, slot);
+        }
         MessagesUtil.sendDebugMessages("Respawned Backpack for " + getEntity().getName());
     }
 
@@ -711,7 +794,7 @@ public class CosmeticUser implements CosmeticHolder {
             //getBalloonManager().removePlayerFromModel(getPlayer());
             //getBalloonManager().sendRemoveLeashPacket();
         }
-        if (hasCosmeticInSlot(CosmeticSlot.BACKPACK)) {
+        if (hasBackpackCosmetic()) {
             despawnBackpack();
         }
         updateCosmetic();
@@ -745,11 +828,14 @@ public class CosmeticUser implements CosmeticHolder {
             List<Player> viewer = HMCCPacketManager.getViewers(getEntity().getLocation());
             HMCCPacketManager.sendLeashPacket(getBalloonManager().getPufferfishBalloonId(), getPlayer().getEntityId(), viewer);
         }
-        if (hasCosmeticInSlot(CosmeticSlot.BACKPACK)) {
+        if (hasBackpackCosmetic()) {
             if (!isBackpackSpawned()) respawnBackpack();
-            CosmeticBackpackType cosmeticBackpackType = (CosmeticBackpackType) getCosmetic(CosmeticSlot.BACKPACK);
-            ItemStack item = getUserCosmeticItem(cosmeticBackpackType);
-            userBackpackManager.setItem(item);
+            for (CosmeticSlot slot : CosmeticSlot.BACKPACK_SLOTS) {
+                UserBackpackManager manager = backpackManagers.get(slot);
+                if (manager != null && getCosmetic(slot) instanceof CosmeticBackpackType backpackType) {
+                    manager.setItem(getUserCosmeticItem(backpackType));
+                }
+            }
         }
         updateCosmetic();
         MessagesUtil.sendDebugMessages("ShowCosmetics");

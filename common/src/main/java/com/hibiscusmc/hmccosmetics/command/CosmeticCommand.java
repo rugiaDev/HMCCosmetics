@@ -170,7 +170,8 @@ public class CosmeticCommand implements CommandExecutor {
                 if (!silent) MessagesUtil.sendMessage(player, "equip-cosmetic", placeholders);
 
                 user.addCosmetic(cosmetic, color);
-                user.updateCosmetic(cosmetic.getSlot());
+                CosmeticSlot equippedSlot = user.slotOf(cosmetic);   // giraffe: 등 치장은 들어간 칸
+                user.updateCosmetic(equippedSlot != null ? equippedSlot : cosmetic.getSlot());
                 return true;
             }
             case ("unapply") -> {

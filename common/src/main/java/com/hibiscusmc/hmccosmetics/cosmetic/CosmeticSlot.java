@@ -19,6 +19,16 @@ public class CosmeticSlot {
     public static final CosmeticSlot MAINHAND = register("MAINHAND");
     public static final CosmeticSlot OFFHAND = register("OFFHAND");
     public static final CosmeticSlot BACKPACK = register("BACKPACK");
+    // giraffe: 바디 치장 칸 2 · 3 — 등 치장(CosmeticBackpackType)을 한 사람이 최대 3개 착용
+    public static final CosmeticSlot BACKPACK_2 = register("BACKPACK_2");
+    public static final CosmeticSlot BACKPACK_3 = register("BACKPACK_3");
+    /** giraffe: 등 치장이 들어갈 수 있는 칸 (앞에서부터 채운다) */
+    public static final java.util.List<CosmeticSlot> BACKPACK_SLOTS = java.util.List.of(BACKPACK, BACKPACK_2, BACKPACK_3);
+
+    /** giraffe: 등 치장 칸인가 */
+    public static boolean isBackpack(@org.jetbrains.annotations.Nullable CosmeticSlot slot) {
+        return slot != null && BACKPACK_SLOTS.contains(slot);
+    }
     public static final CosmeticSlot BALLOON = register("BALLOON");
 
     private final String name;

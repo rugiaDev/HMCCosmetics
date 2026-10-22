@@ -36,7 +36,25 @@ public interface CosmeticHolder {
     void removeCosmeticSlot(@NotNull CosmeticSlot slot);
 
     default void removeCosmeticSlot(@NotNull Cosmetic cosmetic) {
-        removeCosmeticSlot(cosmetic.getSlot());
+        CosmeticSlot slot = slotOf(cosmetic);
+        removeCosmeticSlot(slot != null ? slot : cosmetic.getSlot());
+    }
+
+    /**
+     * giraffe: 이 치장이 실제로 들어 있는 칸. 등 치장은 BACKPACK · BACKPACK_2 · BACKPACK_3 중 어디에 있을 수 있다.
+     * 착용 중이 아니면 null.
+     */
+    default @Nullable CosmeticSlot slotOf(@NotNull Cosmetic cosmetic) {
+        if (CosmeticSlot.isBackpack(cosmetic.getSlot())) {
+            for (CosmeticSlot slot : CosmeticSlot.BACKPACK_SLOTS) {
+                Cosmetic existing = getCosmetic(slot);
+                if (existing != null && Objects.equals(existing.getId(), cosmetic.getId())) return slot;
+            }
+            return null;
+        }
+        Cosmetic existing = getCosmetic(cosmetic.getSlot());
+        if (existing != null && Objects.equals(existing.getId(), cosmetic.getId())) return cosmetic.getSlot();
+        return null;
     }
 
     default boolean hasCosmeticInSlot(@NotNull CosmeticSlot slot) {
@@ -44,9 +62,7 @@ public interface CosmeticHolder {
     }
 
     default boolean hasCosmeticInSlot(@NotNull Cosmetic cosmetic) {
-        final var existingCosmetic = getCosmetic(cosmetic.getSlot());
-        if (existingCosmetic == null) return false;
-        return Objects.equals(cosmetic.getId(), existingCosmetic.getId());
+        return slotOf(cosmetic) != null;
     }
 
     default boolean canEquipCosmetic(@NotNull Cosmetic cosmetic) {

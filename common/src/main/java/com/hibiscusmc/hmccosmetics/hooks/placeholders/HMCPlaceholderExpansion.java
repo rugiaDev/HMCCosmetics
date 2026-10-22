@@ -65,10 +65,8 @@ public class HMCPlaceholderExpansion extends PlaceholderExpansion {
                 if (placeholderArgs.size() >= 2) {
                     Cosmetic cosmetic = Cosmetics.getCosmetic(placeholderArgs.get(1));
                     if (cosmetic == null) return "INVALID_COSMETIC";
-                    Cosmetic currentCosmetic = user.getCosmetic(cosmetic.getSlot());
-                    if (currentCosmetic == null) return TranslationUtil.getTranslation("using-cosmetic", String.valueOf(false)); // I hate this way of handling translations
-                    if (Objects.equals(currentCosmetic.getId(), cosmetic.getId())) return TranslationUtil.getTranslation("using-cosmetic", String.valueOf(true));
-                    return TranslationUtil.getTranslation("using-cosmetic", String.valueOf(false));
+                    // giraffe: 등 치장은 칸 3개 중 어디든
+                    return TranslationUtil.getTranslation("using-cosmetic", String.valueOf(user.hasCosmeticInSlot(cosmetic)));
                 }
             case "current":
                 if (placeholderArgs.size() >= 2) {
@@ -127,9 +125,8 @@ public class HMCPlaceholderExpansion extends PlaceholderExpansion {
                     if (cosmetic == null) {
                         return "INVALID_COSMETIC";
                     }
-                    Cosmetic equippedCosmetic = user.getCosmetic(cosmetic.getSlot());
-                    if (equippedCosmetic == null) return TranslationUtil.getTranslation("equipped-cosmetic", "false");
-                    return TranslationUtil.getTranslation("equipped-cosmetic", String.valueOf(cosmetic.getId().equals(equippedCosmetic.getId())));
+                    // giraffe: 등 치장은 칸 3개 중 어디든
+                    return TranslationUtil.getTranslation("equipped-cosmetic", String.valueOf(user.hasCosmeticInSlot(cosmetic)));
                 }
             // %hmccosmetics_amount_balloon_unlocked%
             case "amount":

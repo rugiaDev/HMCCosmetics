@@ -136,18 +136,15 @@ public class CosmeticPacketInterface implements PacketInterface {
         if (optionalCosmeticUser.isEmpty()) return PacketAction.NOTHING;
         CosmeticUser user = optionalCosmeticUser.get();
 
-        Cosmetic backpackCosmetic = user.getCosmetic(CosmeticSlot.BACKPACK);
-        if (backpackCosmetic == null) return PacketAction.NOTHING;
-        if (!(backpackCosmetic instanceof CosmeticBackpackType cosmeticBackpackType)) return PacketAction.NOTHING;
-        // If a player is viewing their own backpack, don't do anything
-        if (user.getUniqueId().equals(viewerUser.getUniqueId())) {
-            if (cosmeticBackpackType.isFirstPersonCompadible()) return PacketAction.NOTHING;
-        }
-
-        if (user.getUserBackpackManager() == null) return PacketAction.NOTHING;
+        // giraffe: 등 치장 칸 3개 — 그려진 거치대 전부를 진짜 탑승자 앞에 넣는다
+        if (!user.isBackpackSpawned()) return PacketAction.NOTHING;
+        boolean ownView = user.getUniqueId().equals(viewerUser.getUniqueId());
 
         List<Integer> originalPassengers = wrapper.getPassengers();
-        List<Integer> passengers = new ArrayList<>(user.getUserBackpackManager().getFirstArmorStandId());
+        List<Integer> passengers = new ArrayList<>();
+        for (int id : user.getBackpackPassengerIds(ownView)) {
+            if (!originalPassengers.contains(id)) passengers.add(id);
+        }
         passengers.addAll(originalPassengers);
         wrapper.setPassengers(passengers);
         return PacketAction.CHANGED;
@@ -165,8 +162,7 @@ public class CosmeticPacketInterface implements PacketInterface {
         CosmeticUser cosmeticUser = CosmeticUsers.getUser(changedPlayer.getUniqueId());
         if (cosmeticUser == null || cosmeticUser.isInWardrobe()) return PacketAction.NOTHING;
 
-        UserBackpackManager backpack = cosmeticUser.getUserBackpackManager();
-        if (backpack != null) {
+        for (UserBackpackManager backpack : cosmeticUser.getUserBackpackManagers()) {   // giraffe: 등 치장 칸 3개
             for (int cosmeticId : backpack.getEntityManager().getIds()) {
                 HMCCPacketManager.sendEntityScalePacket(cosmeticId, wrapper.getScale(), Collections.singletonList(player));
             }

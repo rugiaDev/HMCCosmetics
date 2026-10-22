@@ -9,6 +9,8 @@ not-enough-args: "%prefix% <red>Improper amount of arguments"
 no-permission: "%prefix% <red>No Permission!"
 no-cosmetic-permission: "%prefix% <red>You do not have permission for this cosmetic!"
 no-cosmetic-slot: "%prefix% <red>There are no cosmetics in that slot!"
+# giraffe: 등 치장(바디 치장) 칸 3개가 다 찼을 때
+backpack-slots-full: "%prefix% <red>바디 치장은 3개까지 착용할 수 있습니다. 착용 중인 치장을 클릭해 해제한 뒤 다시 시도해 주세요."
 on-click-cooldown: "%prefix% <red>You are on cooldown!"
 
 opened-wardrobe: "%prefix% <gradient:#6D9DC5:#45CDE9>Opened wardrobe!"

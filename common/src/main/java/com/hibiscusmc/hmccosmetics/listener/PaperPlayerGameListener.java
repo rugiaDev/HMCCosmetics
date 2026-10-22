@@ -47,7 +47,7 @@ public class PaperPlayerGameListener implements Listener {
         CosmeticUser user = CosmeticUsers.getUser(event.getPlayer());
         if (user == null) return;
         if (user.isInWardrobe()) return;
-        if (user.hasCosmeticInSlot(CosmeticSlot.BACKPACK)) user.respawnBackpack();
+        if (user.hasBackpackCosmetic()) user.respawnBackpack();   // giraffe: 등 치장 칸 3개
     }
 
     private CosmeticSlot equipmentSlotToCosmeticType(EquipmentSlot equipmentSlot) {

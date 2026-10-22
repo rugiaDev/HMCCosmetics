@@ -36,10 +36,18 @@ public class UserBackpackManager {
     private final CosmeticUser user;
     @Getter
     private final UserEntity entityManager;
+    /** giraffe: 이 담당이 그리는 등 치장 칸 (BACKPACK · BACKPACK_2 · BACKPACK_3) */
+    @Getter
+    private final CosmeticSlot slot;
 
     public UserBackpackManager(CosmeticUser user) {
+        this(user, CosmeticSlot.BACKPACK);
+    }
+
+    public UserBackpackManager(CosmeticUser user, CosmeticSlot slot) {
         Location location = user.getEntity().getLocation();
         this.user = user;
+        this.slot = slot;
         this.backpackHidden = false;
         this.invisibleArmorStand = ServerUtils.getNextEntityId(location.getWorld());
         this.entityManager = new UserEntity(user.getUniqueId());
@@ -80,13 +88,8 @@ public class UserBackpackManager {
 
         Entity entity = user.getEntity();
 
-        int[] passengerIDs = new int[entity.getPassengers().size() + 1];
-
-        for (int i = 0; i < entity.getPassengers().size(); i++) {
-            passengerIDs[i] = entity.getPassengers().get(i).getEntityId();
-        }
-
-        passengerIDs[passengerIDs.length - 1] = this.getFirstArmorStandId();
+        // giraffe: 다른 칸 등 치장 거치대도 같이 태운다 (탑승 패킷은 목록 전체를 바꾼다)
+        int[] passengerIDs = user.getBackpackPassengerIds(false);
 
         if (cosmeticBackpackType.isFirstPersonCompadible()) {
             for (int i = particleCloud.size(); i < cosmeticBackpackType.getHeight(); i++) {
@@ -97,9 +100,10 @@ public class UserBackpackManager {
             }
             // Copied code from updating the backpack
             for (int i = 0; i < particleCloud.size(); i++) {
-                if (i == 0) ownerBundle.add(packetBuilder.buildEntityMountPacket(entity.getEntityId(), new int[]{particleCloud.get(i)}));
-                else ownerBundle.add(packetBuilder.buildEntityMountPacket(particleCloud.get(i - 1), new int[]{particleCloud.get(i)}));
+                if (i == 0) continue;   // giraffe: 사람 → 첫 칸은 아래에서 모든 칸을 한 번에
+                ownerBundle.add(packetBuilder.buildEntityMountPacket(particleCloud.get(i - 1), new int[]{particleCloud.get(i)}));
             }
+            ownerBundle.add(packetBuilder.buildEntityMountPacket(entity.getEntityId(), user.getBackpackPassengerIds(true)));
             ownerBundle.add(packetBuilder.buildEntityMountPacket(particleCloud.getLast(), new int[]{getFirstArmorStandId()}));
             if (!user.isHidden()) ownerBundle.add(packetBuilder.buildEntityEquipmentSlotUpdatePacket(getFirstArmorStandId(), Map.of(EquipmentSlot.HEAD, user.getUserCosmeticItem(cosmeticBackpackType, cosmeticBackpackType.getFirstPersonBackpack()))));
         }
@@ -113,10 +117,9 @@ public class UserBackpackManager {
     }
 
     public void despawnBackpack() {
-        int[] existingPassengers = user.getEntity().getPassengers().stream()
-                .mapToInt(Entity::getEntityId)
-                .toArray();
-        if (existingPassengers.length > 0) HMCCPacketManager.sendRidingPacket(user.getEntity().getEntityId(), existingPassengers, getEntityManager().getViewers());
+        // giraffe: 남은 칸 등 치장 거치대 + 진짜 탑승자로 다시 태운다 (이 담당은 이미 목록에서 빠졌다)
+        int[] remainingPassengers = user.getBackpackPassengerIds(false);
+        if (remainingPassengers.length > 0) HMCCPacketManager.sendRidingPacket(user.getEntity().getEntityId(), remainingPassengers, getEntityManager().getViewers());
 
         HMCCPacketManager.sendEntityDestroyPacket(invisibleArmorStand, getEntityManager().getViewers());
         if (particleCloud != null) {
@@ -135,7 +138,7 @@ public class UserBackpackManager {
 
     public void showBackpack() {
         if (!backpackHidden) return;
-        CosmeticBackpackType cosmeticBackpackType = (CosmeticBackpackType) user.getCosmetic(CosmeticSlot.BACKPACK);
+        CosmeticBackpackType cosmeticBackpackType = (CosmeticBackpackType) user.getCosmetic(slot);
         ItemStack item = user.getUserCosmeticItem(cosmeticBackpackType);
         //getArmorStand().getEquipment().setHelmet(item);
         backpackHidden = false;

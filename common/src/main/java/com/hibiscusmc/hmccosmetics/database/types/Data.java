@@ -35,9 +35,11 @@ public abstract class Data {
                 if (shouldHiddenSave(reason)) data.append("HIDDEN=").append(reason);
             }
         }
-        for (Cosmetic cosmetic : user.getCosmetics()) {
-            Color color = user.getCosmeticColor(cosmetic.getSlot());
-            String input = cosmetic.getSlot() + "=" + cosmetic.getId();
+        // giraffe: 칸 이름은 치장의 기본 칸이 아니라 실제로 든 칸 (등 치장 BACKPACK_2 · BACKPACK_3)
+        for (Map.Entry<CosmeticSlot, Cosmetic> slotEntry : user.getCosmeticsBySlot().entrySet()) {
+            Cosmetic cosmetic = slotEntry.getValue();
+            Color color = user.getCosmeticColor(slotEntry.getKey());
+            String input = slotEntry.getKey() + "=" + cosmetic.getId();
             if (color != null) input = input + "&" + color.asRGB();
             if (data.isEmpty()) {
                 data.append(input);
