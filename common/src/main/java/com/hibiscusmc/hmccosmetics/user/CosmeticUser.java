@@ -16,6 +16,7 @@ import com.hibiscusmc.hmccosmetics.cosmetic.behavior.CosmeticUpdateBehavior;
 import com.hibiscusmc.hmccosmetics.cosmetic.types.CosmeticArmorType;
 import com.hibiscusmc.hmccosmetics.cosmetic.types.CosmeticBackpackType;
 import com.hibiscusmc.hmccosmetics.cosmetic.types.CosmeticBalloonType;
+import com.hibiscusmc.hmccosmetics.database.Database;
 import com.hibiscusmc.hmccosmetics.database.UserData;
 import com.hibiscusmc.hmccosmetics.gui.Menus;
 import com.hibiscusmc.hmccosmetics.user.manager.UserBackpackManager;
@@ -58,6 +59,12 @@ public class CosmeticUser implements CosmeticHolder {
     @Getter
     private final UUID uniqueId;
     private int taskId = -1;
+    /** giraffe: 바꿀 때 저장 — DB 에서 다 읽은 뒤부터만 (읽는 중의 착용은 저장하지 않는다) */
+    private boolean saveOnChange = false;
+    /** giraffe: 연타하면 마지막 상태만 저장하도록 미뤄 둔 저장 */
+    private BukkitTask pendingSave;
+    /** giraffe: 마지막으로 바꾼 뒤 이만큼(틱) 조용하면 저장 */
+    private static final long SAVE_DEBOUNCE_TICKS = 10L;
     private final HashMap<CosmeticSlot, Cosmetic> playerCosmetics = new HashMap<>();
     private UserWardrobeManager userWardrobeManager;
     // giraffe: 풍선 칸마다 그리기 담당 하나
@@ -116,8 +123,24 @@ public class CosmeticUser implements CosmeticHolder {
             }
             this.applyHiddenState(userData.getHiddenReasons());
         }
+        this.saveOnChange = true;   // giraffe
 
         return this;
+    }
+
+    /**
+     * giraffe: 치장을 착용 · 해제 · 염색할 때 저장 (10-23 — 퇴장 때만 저장하면 채널을 옮기기 직전에 바꾼 치장이 다음 채널에서 옛것으로 보였다).
+     * 0.5초 안에 또 바뀌면 다시 미뤄 마지막 상태만 저장한다. 저장 자체는 비동기 (Database.save)
+     */
+    private void scheduleSave() {
+        if (!saveOnChange || getPlayer() == null) return;
+        HMCCosmeticsPlugin plugin = HMCCosmeticsPlugin.getInstance();
+        if (plugin.isDisabled()) return;
+        if (pendingSave != null) pendingSave.cancel();
+        pendingSave = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            pendingSave = null;
+            if (CosmeticUsers.getUser(getUniqueId()) == this) Database.save(this);   // 이미 나갔으면 퇴장 저장이 했다
+        }, SAVE_DEBOUNCE_TICKS);
     }
 
     /**
@@ -217,6 +240,11 @@ public class CosmeticUser implements CosmeticHolder {
     }
 
     public void destroy() {
+        if (pendingSave != null) {   // giraffe: 퇴장 저장이 바로 앞에서 했다
+            pendingSave.cancel();
+            pendingSave = null;
+        }
+        saveOnChange = false;
         if(this.taskId != -1) { // ensure we're actually ticking this user.
             Bukkit.getScheduler().cancelTask(taskId);
         }
@@ -263,6 +291,7 @@ public class CosmeticUser implements CosmeticHolder {
                 spawnBalloon(balloonType, targetSlot);
             }
         }
+        scheduleSave();   // giraffe
         // API
         PlayerCosmeticPostEquipEvent postEquipEvent = new PlayerCosmeticPostEquipEvent(this, cosmetic);
         Bukkit.getPluginManager().callEvent(postEquipEvent);
@@ -302,6 +331,7 @@ public class CosmeticUser implements CosmeticHolder {
         colors.remove(slot);
         playerCosmetics.remove(slot);
         removeArmor(slot);
+        scheduleSave();   // giraffe
     }
 
     @Override

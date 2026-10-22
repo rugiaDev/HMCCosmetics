@@ -41,10 +41,13 @@ public abstract class SQLData extends Data {
     @Override
     @SuppressWarnings("resource")
     public void save(CosmeticUser user) {
+        // giraffe: 저장할 내용은 부른 스레드(메인)에서 먼저 만든다 — 바꿀 때 저장하면서 비동기 쪽이 바뀌는 중인 목록을 읽지 않게
+        final String uniqueId = user.getUniqueId().toString();
+        final String serialized = serializeData(user);
         Runnable run = () -> {
             try (PreparedStatement preparedSt = preparedStatement("REPLACE INTO COSMETICDATABASE(UUID,COSMETICS) VALUES(?,?);")) {
-                preparedSt.setString(1, user.getUniqueId().toString());
-                preparedSt.setString(2, serializeData(user));
+                preparedSt.setString(1, uniqueId);
+                preparedSt.setString(2, serialized);
                 preparedSt.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
