@@ -56,7 +56,7 @@ public class PlayerMovementListener implements Listener {
         );
         final SmallLocation next = SmallLocation.fromLocation(nextLoc);
 
-        if(next.distanceTo(previous) > 0.25) {
+        if(next.distanceTo(previous) > 0.1) {   // giraffe: 0.25 → 0.1 — 풍선이 늦게 따라와 줄이 늘어나 보였다(10-23)
             this.locations.put(player.getUniqueId(), next);
             return true;
         }
