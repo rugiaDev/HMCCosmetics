@@ -23,7 +23,7 @@ public class PlayerMovementListener implements Listener {
     /** giraffe: 움직임을 따라가는 칸 — 바디 치장 칸 전부(설정 수) + 풍선 */
     private static List<CosmeticSlot> movementCosmetics() {
         List<CosmeticSlot> slots = new java.util.ArrayList<>(CosmeticSlot.BACKPACK_SLOTS);
-        slots.add(CosmeticSlot.BALLOON);
+        slots.addAll(CosmeticSlot.BALLOON_SLOTS);
         return slots;
     }
 

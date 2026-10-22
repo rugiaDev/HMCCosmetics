@@ -70,10 +70,10 @@ public class TypeCosmetic extends Type {
         boolean isUnEquippingCosmetic = false;
         if (cosmeticHolder.hasCosmeticInSlot(cosmetic)) isUnEquippingCosmetic = true;   // giraffe: 등 치장은 칸 3개 중 어디든
 
-        // giraffe: 등 치장 칸 3개가 다 찼으면 바꾸지 않고 안내만
-        if (!isUnEquippingCosmetic && cosmetic instanceof CosmeticBackpackType
-            && cosmeticHolder instanceof CosmeticUser slotUser && slotUser.isBackpackSlotsFull(cosmetic)) {
-            MessagesUtil.sendMessage(viewer, "backpack-slots-full");
+        // giraffe: 등 치장 · 풍선 칸이 다 찼으면 바꾸지 않고 안내만
+        if (!isUnEquippingCosmetic && CosmeticSlot.multiSlots(cosmetic.getSlot()) != null
+            && cosmeticHolder instanceof CosmeticUser slotUser && slotUser.isMultiSlotsFull(cosmetic)) {
+            MessagesUtil.sendMessage(viewer, cosmetic instanceof CosmeticBackpackType ? "backpack-slots-full" : "balloon-slots-full");
             return;
         }
 

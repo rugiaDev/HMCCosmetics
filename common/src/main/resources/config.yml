@@ -60,6 +60,8 @@ cosmetic-settings:
   backpack-prevent-darkness: true
   # giraffe: 바디 치장(등 치장)을 한 사람이 동시에 착용할 수 있는 수 (1 ~ 9, 기본 3) — 칸 BACKPACK · BACKPACK_2 · …
   giraffe-body-slots: 3
+  # giraffe: 풍선을 한 사람이 동시에 착용할 수 있는 수 (1 ~ 9, 기본 3) — 둘째 칸부터는 사람 둘레로 돌려 띄운다
+  giraffe-balloon-slots: 3
   # Intercepts packets to attempt to reorder them to properly handle the backpack
   backpack-intercept-passenger-packets: false
 

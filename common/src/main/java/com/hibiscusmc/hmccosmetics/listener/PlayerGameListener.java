@@ -128,11 +128,11 @@ public class PlayerGameListener implements Listener {
             user.showCosmetics(CosmeticUser.HiddenReason.WORLD);
         }
 
-        if (user.hasCosmeticInSlot(CosmeticSlot.BALLOON)) {
+        if (user.hasBalloonCosmetic()) {   // giraffe: 풍선 칸 여러 개
             user.despawnBalloon();
 
             Bukkit.getScheduler().runTaskLater(HMCCosmeticsPlugin.getInstance(), () -> {
-                user.spawnBalloon((CosmeticBalloonType) user.getCosmetic(CosmeticSlot.BALLOON));
+                user.respawnBalloon();
                 user.updateCosmetic();
             }, 4);
         }

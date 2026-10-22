@@ -55,7 +55,8 @@ public class CosmeticUser implements CosmeticHolder {
     private int taskId = -1;
     private final HashMap<CosmeticSlot, Cosmetic> playerCosmetics = new HashMap<>();
     private UserWardrobeManager userWardrobeManager;
-    private UserBalloonManager userBalloonManager;
+    // giraffe: 풍선 칸마다 그리기 담당 하나
+    private final java.util.LinkedHashMap<CosmeticSlot, UserBalloonManager> balloonManagers = new java.util.LinkedHashMap<>();
     @Getter @Nullable
     // giraffe: 등 치장 칸마다 그리기 담당 하나 (원래는 사람마다 하나라 등 치장을 하나만 그렸다)
     private final java.util.LinkedHashMap<CosmeticSlot, UserBackpackManager> backpackManagers = new java.util.LinkedHashMap<>();
@@ -240,7 +241,7 @@ public class CosmeticUser implements CosmeticHolder {
         cosmetic = event.getCosmetic();
         // Internal
         // giraffe: 등 치장은 이미 착용 중인 칸 → 빈 칸(1 → 2 → 3) → 다 차 있으면 1번 칸을 바꾼다
-        final CosmeticSlot targetSlot = cosmetic instanceof CosmeticBackpackType ? pickBackpackSlot(cosmetic) : cosmetic.getSlot();
+        final CosmeticSlot targetSlot = CosmeticSlot.multiSlots(cosmetic.getSlot()) != null ? pickMultiSlot(cosmetic) : cosmetic.getSlot();
         if (playerCosmetics.containsKey(targetSlot)) {
             removeCosmeticSlot(targetSlot);
         }
@@ -253,9 +254,8 @@ public class CosmeticUser implements CosmeticHolder {
                 spawnBackpack(backpackType, targetSlot);
                 MessagesUtil.sendDebugMessages("addPlayerCosmetic[spawnBackpack,id=" + cosmetic.getId() + "]");
             }
-            if (cosmetic.getSlot() == CosmeticSlot.BALLOON) {
-                CosmeticBalloonType balloonType = (CosmeticBalloonType) cosmetic;
-                spawnBalloon(balloonType);
+            if (cosmetic instanceof CosmeticBalloonType balloonType) {
+                spawnBalloon(balloonType, targetSlot);
             }
         }
         // API
@@ -291,8 +291,8 @@ public class CosmeticUser implements CosmeticHolder {
         if (CosmeticSlot.isBackpack(slot)) {
             despawnBackpack(slot);
         }
-        if (slot == CosmeticSlot.BALLOON) {
-            despawnBalloon();
+        if (CosmeticSlot.isBalloon(slot)) {
+            despawnBalloon(slot);
         }
         colors.remove(slot);
         playerCosmetics.remove(slot);
@@ -468,7 +468,33 @@ public class CosmeticUser implements CosmeticHolder {
     }
 
     public @Nullable UserBalloonManager getBalloonManager() {
-        return this.userBalloonManager;
+        return balloonManagers.isEmpty() ? null : balloonManagers.values().iterator().next();   // giraffe: 첫 칸 (옛 API)
+    }
+
+    /** giraffe: 그 칸의 풍선 담당 */
+    public @Nullable UserBalloonManager getBalloonManager(@Nullable CosmeticSlot slot) {
+        return slot == null ? null : balloonManagers.get(slot);
+    }
+
+    /** giraffe: 풍선이 하나라도 있나 */
+    public boolean hasBalloonCosmetic() {
+        for (CosmeticSlot slot : CosmeticSlot.BALLOON_SLOTS) if (playerCosmetics.containsKey(slot)) return true;
+        return false;
+    }
+
+    /**
+     * giraffe: 그 칸 풍선을 띄우는 자리 — 첫 칸은 치장 설정(balloon-offset) 그대로, 둘째 칸부터는 사람 둘레로 돌려 겹치지 않게.
+     * 첫 칸 자리(기본 0.5, 3, 0.5)를 사람 중심 원 위의 점으로 보고, 칸마다 같은 각도씩 돌리고 반지름 1.1 · 0.25 씩 낮춘다.
+     */
+    public @NotNull org.bukkit.util.Vector balloonOffset(@NotNull CosmeticBalloonType type, @Nullable CosmeticSlot slot) {
+        org.bukkit.util.Vector base = type.getBalloonOffset().clone();
+        int index = slot == null ? 0 : Math.max(0, CosmeticSlot.BALLOON_SLOTS.indexOf(slot));
+        if (index == 0) return base;
+        int count = Math.max(2, CosmeticSlot.BALLOON_SLOTS.size());
+        double startAngle = Math.atan2(base.getZ(), base.getX());
+        double angle = startAngle + 2 * Math.PI * index / count;
+        double radius = Math.max(1.1, Math.hypot(base.getX(), base.getZ()));
+        return new org.bukkit.util.Vector(Math.cos(angle) * radius, base.getY() - 0.25 * index, Math.sin(angle) * radius);
     }
 
     public @Nullable UserWardrobeManager getWardrobeManager() {
@@ -622,23 +648,37 @@ public class CosmeticUser implements CosmeticHolder {
         return java.util.Map.copyOf(playerCosmetics);
     }
 
-    /** giraffe: 등 치장을 넣을 칸 — 이미 착용 중이면 그 칸, 아니면 빈 칸, 다 차 있으면 1번 칸 */
-    public @NotNull CosmeticSlot pickBackpackSlot(@NotNull Cosmetic cosmetic) {
+    /** giraffe: 여러 칸 치장(등 치장 · 풍선)을 넣을 칸 — 이미 착용 중이면 그 칸, 아니면 빈 칸, 다 차 있으면 1번 칸 */
+    public @NotNull CosmeticSlot pickMultiSlot(@NotNull Cosmetic cosmetic) {
         CosmeticSlot existing = slotOf(cosmetic);
         if (existing != null) return existing;
-        for (CosmeticSlot slot : CosmeticSlot.BACKPACK_SLOTS) {
+        List<CosmeticSlot> slots = CosmeticSlot.multiSlots(cosmetic.getSlot());
+        if (slots == null) return cosmetic.getSlot();
+        for (CosmeticSlot slot : slots) {
             if (!playerCosmetics.containsKey(slot)) return slot;
         }
-        return CosmeticSlot.BACKPACK;
+        return slots.get(0);
     }
 
-    /** giraffe: 등 치장 칸이 다 찼나 (이 치장을 이미 착용 중이면 false) */
-    public boolean isBackpackSlotsFull(@NotNull Cosmetic cosmetic) {
+    /** giraffe: 옛 이름 — 등 치장 */
+    public @NotNull CosmeticSlot pickBackpackSlot(@NotNull Cosmetic cosmetic) {
+        return pickMultiSlot(cosmetic);
+    }
+
+    /** giraffe: 여러 칸 치장(등 치장 · 풍선)의 칸이 다 찼나 (이 치장을 이미 착용 중이면 false) */
+    public boolean isMultiSlotsFull(@NotNull Cosmetic cosmetic) {
         if (slotOf(cosmetic) != null) return false;
-        for (CosmeticSlot slot : CosmeticSlot.BACKPACK_SLOTS) {
+        List<CosmeticSlot> slots = CosmeticSlot.multiSlots(cosmetic.getSlot());
+        if (slots == null) return false;
+        for (CosmeticSlot slot : slots) {
             if (!playerCosmetics.containsKey(slot)) return false;
         }
         return true;
+    }
+
+    /** giraffe: 옛 이름 — 등 치장 */
+    public boolean isBackpackSlotsFull(@NotNull Cosmetic cosmetic) {
+        return isMultiSlotsFull(cosmetic);
     }
 
     /**
@@ -664,27 +704,38 @@ public class CosmeticUser implements CosmeticHolder {
     }
 
     public boolean isBalloonSpawned() {
-        return this.userBalloonManager != null;
+        return !balloonManagers.isEmpty();
     }
 
     public void spawnBalloon(CosmeticBalloonType cosmeticBalloonType) {
-        if (this.userBalloonManager != null) return;
+        CosmeticSlot slot = slotOf(cosmeticBalloonType);
+        spawnBalloon(cosmeticBalloonType, slot != null ? slot : CosmeticSlot.BALLOON);
+    }
+
+    /** giraffe: 그 칸의 풍선을 띄운다 — 자리는 {@link #balloonOffset} */
+    public void spawnBalloon(CosmeticBalloonType cosmeticBalloonType, CosmeticSlot slot) {
+        if (balloonManagers.containsKey(slot)) return;
 
         org.bukkit.entity.Entity entity = getEntity();
 
         UserBalloonManager userBalloonManager1 = new UserBalloonManager(this, entity.getLocation());
-        userBalloonManager1.getModelEntity().teleport(entity.getLocation().add(cosmeticBalloonType.getBalloonOffset()));
+        userBalloonManager1.getModelEntity().teleport(entity.getLocation().add(balloonOffset(cosmeticBalloonType, slot)));
 
-        userBalloonManager1.spawnModel(cosmeticBalloonType, getCosmeticColor(cosmeticBalloonType.getSlot()));
-        userBalloonManager1.addPlayerToModel(this, cosmeticBalloonType, getCosmeticColor(cosmeticBalloonType.getSlot()));
+        userBalloonManager1.spawnModel(cosmeticBalloonType, getCosmeticColor(slot));
+        userBalloonManager1.addPlayerToModel(this, cosmeticBalloonType, getCosmeticColor(slot));
 
-        this.userBalloonManager = userBalloonManager1;
+        balloonManagers.put(slot, userBalloonManager1);
     }
 
     public void despawnBalloon() {
-        if (this.userBalloonManager == null) return;
-        this.userBalloonManager.remove();
-        this.userBalloonManager = null;
+        for (CosmeticSlot slot : List.copyOf(balloonManagers.keySet())) despawnBalloon(slot);
+    }
+
+    /** giraffe: 그 칸의 풍선만 치운다 */
+    public void despawnBalloon(CosmeticSlot slot) {
+        UserBalloonManager manager = balloonManagers.remove(slot);
+        if (manager == null) return;
+        manager.remove();
     }
 
     public void respawnBackpack() {
@@ -698,11 +749,12 @@ public class CosmeticUser implements CosmeticHolder {
     }
 
     public void respawnBalloon() {
-        if (!hasCosmeticInSlot(CosmeticSlot.BALLOON)) return;
-        final Cosmetic cosmetic = getCosmetic(CosmeticSlot.BALLOON);
+        if (!hasBalloonCosmetic()) return;
         despawnBalloon();
         if (!hiddenReason.isEmpty()) return;
-        spawnBalloon((CosmeticBalloonType) cosmetic);
+        for (CosmeticSlot slot : CosmeticSlot.BALLOON_SLOTS) {   // giraffe: 칸마다
+            if (getCosmetic(slot) instanceof CosmeticBalloonType balloonType) spawnBalloon(balloonType, slot);
+        }
         MessagesUtil.sendDebugMessages("Respawned Balloon for " + getEntity().getName());
     }
 
@@ -789,7 +841,7 @@ public class CosmeticUser implements CosmeticHolder {
             return;
         }
         hiddenReason.add(reason);
-        if (hasCosmeticInSlot(CosmeticSlot.BALLOON)) {
+        if (hasBalloonCosmetic()) {
             despawnBalloon();
             //getBalloonManager().removePlayerFromModel(getPlayer());
             //getBalloonManager().sendRemoveLeashPacket();
@@ -821,12 +873,15 @@ public class CosmeticUser implements CosmeticHolder {
 
         hiddenReason.remove(reason);
         if (isHidden()) return;
-        if (hasCosmeticInSlot(CosmeticSlot.BALLOON)) {
+        if (hasBalloonCosmetic()) {
             if (!isBalloonSpawned()) respawnBalloon();
-            CosmeticBalloonType balloonType = (CosmeticBalloonType) getCosmetic(CosmeticSlot.BALLOON);
-            getBalloonManager().addPlayerToModel(this, balloonType);
             List<Player> viewer = HMCCPacketManager.getViewers(getEntity().getLocation());
-            HMCCPacketManager.sendLeashPacket(getBalloonManager().getPufferfishBalloonId(), getPlayer().getEntityId(), viewer);
+            for (CosmeticSlot slot : CosmeticSlot.BALLOON_SLOTS) {   // giraffe: 칸마다
+                UserBalloonManager manager = balloonManagers.get(slot);
+                if (manager == null || !(getCosmetic(slot) instanceof CosmeticBalloonType balloonType)) continue;
+                manager.addPlayerToModel(this, balloonType);
+                HMCCPacketManager.sendLeashPacket(manager.getPufferfishBalloonId(), getPlayer().getEntityId(), viewer);
+            }
         }
         if (hasBackpackCosmetic()) {
             if (!isBackpackSpawned()) respawnBackpack();

@@ -45,8 +45,9 @@ public interface CosmeticHolder {
      * 착용 중이 아니면 null.
      */
     default @Nullable CosmeticSlot slotOf(@NotNull Cosmetic cosmetic) {
-        if (CosmeticSlot.isBackpack(cosmetic.getSlot())) {
-            for (CosmeticSlot slot : CosmeticSlot.BACKPACK_SLOTS) {
+        java.util.List<CosmeticSlot> multi = CosmeticSlot.multiSlots(cosmetic.getSlot());   // giraffe: 등 치장 · 풍선
+        if (multi != null) {
+            for (CosmeticSlot slot : multi) {
                 Cosmetic existing = getCosmetic(slot);
                 if (existing != null && Objects.equals(existing.getId(), cosmetic.getId())) return slot;
             }

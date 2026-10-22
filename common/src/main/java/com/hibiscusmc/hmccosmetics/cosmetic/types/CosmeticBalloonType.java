@@ -58,7 +58,7 @@ public class CosmeticBalloonType extends Cosmetic implements CosmeticUpdateBehav
     @Override
     public void dispatchUpdate(@NotNull CosmeticUser user) {
         Entity entity = Bukkit.getEntity(user.getUniqueId());
-        UserBalloonManager userBalloonManager = user.getBalloonManager();
+        UserBalloonManager userBalloonManager = user.getBalloonManager(user.slotOf(this));   // giraffe: 칸마다 담당
 
         if (entity == null || userBalloonManager == null) return;
         if (user.isInWardrobe()) return;
@@ -69,13 +69,13 @@ public class CosmeticBalloonType extends Cosmetic implements CosmeticUpdateBehav
         }
 
         Location newLocation = entity.getLocation();
-        newLocation = newLocation.clone().add(getBalloonOffset());
+        newLocation = newLocation.clone().add(user.balloonOffset(this, user.slotOf(this)));   // giraffe: 칸마다 자리
         if (Settings.isBalloonHeadForward()) newLocation.setPitch(0);
 
         if (!user.isHidden() && showLead) {
             List<Player> sendTo = userBalloonManager.getPufferfish().refreshViewers(newLocation);
             if (sendTo.isEmpty()) return;
-            user.getBalloonManager().getPufferfish().spawnPufferfish(newLocation, sendTo);
+            userBalloonManager.getPufferfish().spawnPufferfish(newLocation, sendTo);
             HMCCPacketManager.sendLeashPacket(userBalloonManager.getPufferfishBalloonId(), entity.getEntityId(), sendTo);
         }
     }
@@ -83,7 +83,7 @@ public class CosmeticBalloonType extends Cosmetic implements CosmeticUpdateBehav
     @Override
     public void dispatchMove(@NotNull CosmeticUser user, @NotNull Location from, @NotNull Location to) {
         Entity entity = Bukkit.getEntity(user.getUniqueId());
-        UserBalloonManager userBalloonManager = user.getBalloonManager();
+        UserBalloonManager userBalloonManager = user.getBalloonManager(user.slotOf(this));   // giraffe: 칸마다 담당
 
         if (entity == null || userBalloonManager == null) return;
         if (user.isInWardrobe()) return;
@@ -93,8 +93,8 @@ public class CosmeticBalloonType extends Cosmetic implements CosmeticUpdateBehav
         }
 
         Location newLocation = entity.getLocation();
-        Location currentLocation = user.getBalloonManager().getLocation();
-        newLocation = newLocation.clone().add(getBalloonOffset());
+        Location currentLocation = userBalloonManager.getLocation();
+        newLocation = newLocation.clone().add(user.balloonOffset(this, user.slotOf(this)));   // giraffe: 칸마다 자리
         if (Settings.isBalloonHeadForward()) newLocation.setPitch(0);
 
         List<Player> viewers = HMCCPacketManager.getViewers(entity.getLocation());

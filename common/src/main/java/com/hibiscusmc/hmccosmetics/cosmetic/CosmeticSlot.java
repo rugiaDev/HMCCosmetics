@@ -43,6 +43,34 @@ public class CosmeticSlot {
         BACKPACK_SLOTS = java.util.List.copyOf(slots);
     }
     public static final CosmeticSlot BALLOON = register("BALLOON");
+    /**
+     * giraffe: 풍선이 들어갈 수 있는 칸 (앞에서부터 채운다). BALLOON · BALLOON_2 · BALLOON_3 …
+     * 칸 수는 설정을 읽을 때 {@link #setBalloonSlotCount} 로 정한다 (기본 3).
+     */
+    public static volatile java.util.List<CosmeticSlot> BALLOON_SLOTS = java.util.List.of(BALLOON);
+
+    /** giraffe: 풍선 칸인가 */
+    public static boolean isBalloon(@org.jetbrains.annotations.Nullable CosmeticSlot slot) {
+        return slot != null && BALLOON_SLOTS.contains(slot);
+    }
+
+    /** giraffe: 풍선 칸 수를 정한다 (1 ~ {@link #MAX_BACKPACK_SLOTS}) */
+    public static void setBalloonSlotCount(int count) {
+        int clamped = Math.max(1, Math.min(MAX_BACKPACK_SLOTS, count));
+        java.util.List<CosmeticSlot> slots = new java.util.ArrayList<>();
+        slots.add(BALLOON);
+        for (int index = 2; index <= clamped; index++) {
+            slots.add(REGISTRY.computeIfAbsent("BALLOON_" + index, CosmeticSlot::new));
+        }
+        BALLOON_SLOTS = java.util.List.copyOf(slots);
+    }
+
+    /** giraffe: 이 치장 종류가 여러 칸에 들어갈 수 있으면 그 칸 목록 (등 치장 · 풍선), 아니면 null */
+    public static @org.jetbrains.annotations.Nullable java.util.List<CosmeticSlot> multiSlots(@org.jetbrains.annotations.Nullable CosmeticSlot baseSlot) {
+        if (baseSlot == BACKPACK) return BACKPACK_SLOTS;
+        if (baseSlot == BALLOON) return BALLOON_SLOTS;
+        return null;
+    }
 
     private final String name;
 

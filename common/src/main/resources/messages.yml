@@ -11,6 +11,7 @@ no-cosmetic-permission: "%prefix% <red>You do not have permission for this cosme
 no-cosmetic-slot: "%prefix% <red>There are no cosmetics in that slot!"
 # giraffe: 등 치장(바디 치장) 칸 3개가 다 찼을 때
 backpack-slots-full: "%prefix% <red>바디 치장 칸이 모두 찼습니다. 착용 중인 치장을 클릭해 해제한 뒤 다시 시도해 주세요."
+balloon-slots-full: "%prefix% <red>풍선 칸이 모두 찼습니다. 착용 중인 풍선을 클릭해 해제한 뒤 다시 시도해 주세요."
 on-click-cooldown: "%prefix% <red>You are on cooldown!"
 
 opened-wardrobe: "%prefix% <gradient:#6D9DC5:#45CDE9>Opened wardrobe!"
