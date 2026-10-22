@@ -62,6 +62,8 @@ cosmetic-settings:
   giraffe-body-slots: 3
   # giraffe: 풍선을 한 사람이 동시에 착용할 수 있는 수 (1 ~ 9, 기본 3) — 둘째 칸부터는 사람 둘레로 돌려 띄운다
   giraffe-balloon-slots: 3
+  # giraffe: 바디 치장 1인칭 전용 모델(firstperson-item) 사용 — 끄면(기본) 본인도 남과 같은 모델 · 같은 자리. 1인칭 숨김은 동반 모드 단추
+  giraffe-firstperson-backpack: false
   # Intercepts packets to attempt to reorder them to properly handle the backpack
   backpack-intercept-passenger-packets: false
 

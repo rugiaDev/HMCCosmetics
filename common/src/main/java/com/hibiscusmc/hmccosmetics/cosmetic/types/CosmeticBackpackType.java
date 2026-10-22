@@ -143,7 +143,7 @@ public class CosmeticBackpackType extends Cosmetic implements CosmeticUpdateBeha
     }
 
     public boolean isFirstPersonCompadible() {
-        return firstPersonBackpack != null;
+        return firstPersonBackpack != null && Settings.isGiraffeFirstPersonBackpack();   // giraffe: 설정으로 끔 (기본)
     }
 
 }

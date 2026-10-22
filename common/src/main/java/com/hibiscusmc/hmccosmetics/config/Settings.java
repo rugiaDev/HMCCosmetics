@@ -126,6 +126,9 @@ public class Settings {
     private static boolean balloonDefaultShowLead;
     @Getter
     private static boolean backpackPreventDarkness;
+    /** giraffe: 등 치장 1인칭 모델(firstperson-item · 구름 사다리) 사용 — 기본 끔 */
+    @Getter
+    private static boolean giraffeFirstPersonBackpack;
     @Getter
     private static boolean preferHMCColorDyeMenu;
     @Getter
@@ -243,6 +246,9 @@ public class Settings {
         balloonHeadForward = cosmeticSettings.node(COSMETIC_BALLOON_HEAD_FORWARD_PATH).getBoolean(false);
         balloonDefaultShowLead = cosmeticSettings.node(COSMETIC_BALLOON_DEFAULT_SHOW_LEAD_PATH).getBoolean(true);
         backpackPreventDarkness = cosmeticSettings.node(BACKPACK_PREVENT_DARKNESS_PATH).getBoolean(true);
+        // giraffe: 1인칭 등 치장 모델은 구름 사다리로 2칸 띄워야 몸에 맞는데, 26.2 손님에서 사다리가 안 서면 땅속에 묻힌다(10-23 사용자 "날개가 땅속으로").
+        //   1인칭 숨김은 동반 모드(1.12.27)가 하므로 기본은 끄고 모두 같은 모델 · 같은 자리
+        giraffeFirstPersonBackpack = cosmeticSettings.node("giraffe-firstperson-backpack").getBoolean(false);
         // giraffe: 바디 치장(등 치장) 동시 착용 수 — 기본 3
         CosmeticSlot.setBackpackSlotCount(cosmeticSettings.node("giraffe-body-slots").getInt(3));
         // giraffe: 풍선 동시 착용 수 — 기본 3
