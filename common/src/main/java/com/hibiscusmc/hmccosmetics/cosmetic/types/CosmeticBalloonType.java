@@ -75,6 +75,11 @@ public class CosmeticBalloonType extends Cosmetic implements CosmeticUpdateBehav
 
         if (!user.isHidden() && showLead) {
             List<Player> sendTo = userBalloonManager.getPufferfish().refreshViewers(newLocation);
+            // giraffe: 바디 치장이 없으면 탑승 패킷을 주기적으로 보내는 곳이 없다 — 다른 플러그인이 사람 탑승자를 바꿔 손님 화면에서
+            // 줄 고정점이 내려앉아도 1초 안에 다시 태운다 (바디 치장이 있으면 그쪽이 고정점까지 한 목록으로 보낸다)
+            if (Settings.isBackpackForceRidingEnabled() && !user.hasBackpackCosmetic()) {
+                userBalloonManager.mountLeashAnchor(user, new ArrayList<>(userBalloonManager.getPufferfish().getViewers()));
+            }
             if (sendTo.isEmpty()) return;
             userBalloonManager.getPufferfish().spawnPufferfish(newLocation, sendTo);
             userBalloonManager.mountLeashAnchor(user, sendTo);   // giraffe: 줄 고정점을 새로 보는 사람 화면에서 사람 위에 태운다
