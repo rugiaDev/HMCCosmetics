@@ -623,6 +623,7 @@ public class CosmeticUser implements CosmeticHolder {
     /** giraffe: 그 칸의 등 치장을 그린다 */
     public void spawnBackpack(CosmeticBackpackType cosmeticBackpackType, CosmeticSlot slot) {
         if (backpackManagers.containsKey(slot)) return;
+        if (getEntity() == null) return;   // giraffe: 나간 사람 (10-23 NPE)
         UserBackpackManager manager = new UserBackpackManager(this, slot);
         backpackManagers.put(slot, manager);
         manager.spawnBackpack(cosmeticBackpackType);
@@ -742,6 +743,7 @@ public class CosmeticUser implements CosmeticHolder {
         if (balloonManagers.containsKey(slot)) return;
 
         Entity entity = getEntity();
+        if (entity == null) return;   // giraffe: 나간 사람
 
         UserBalloonManager userBalloonManager1 = new UserBalloonManager(this, entity.getLocation());
         userBalloonManager1.getModelEntity().teleport(entity.getLocation().add(balloonOffset(cosmeticBalloonType, slot)));
@@ -767,6 +769,7 @@ public class CosmeticUser implements CosmeticHolder {
         if (!hasBackpackCosmetic()) return;
         despawnBackpack();
         if (!hiddenReason.isEmpty()) return;
+        if (getEntity() == null) return;   // giraffe: 1틱 뒤 다시 그리기 사이에 나가면 사람이 없다(10-23 NPE)
         for (CosmeticSlot slot : CosmeticSlot.BACKPACK_SLOTS) {
             if (getCosmetic(slot) instanceof CosmeticBackpackType backpackType) spawnBackpack(backpackType, slot);
         }
@@ -777,6 +780,7 @@ public class CosmeticUser implements CosmeticHolder {
         if (!hasBalloonCosmetic()) return;
         despawnBalloon();
         if (!hiddenReason.isEmpty()) return;
+        if (getEntity() == null) return;   // giraffe: 나간 사람
         for (CosmeticSlot slot : CosmeticSlot.BALLOON_SLOTS) {   // giraffe: 칸마다
             if (getCosmetic(slot) instanceof CosmeticBalloonType balloonType) spawnBalloon(balloonType, slot);
         }

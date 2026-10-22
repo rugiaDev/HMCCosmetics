@@ -18,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CosmeticBalloonType extends Cosmetic implements CosmeticUpdateBehavior, CosmeticMovementBehavior {
@@ -98,7 +99,8 @@ public class CosmeticBalloonType extends Cosmetic implements CosmeticUpdateBehav
         newLocation = newLocation.clone().add(user.balloonOffset(this, user.slotOf(this)));   // giraffe: 칸마다 자리
         if (Settings.isBalloonHeadForward()) newLocation.setPitch(0);
 
-        List<Player> viewers = HMCCPacketManager.getViewers(entity.getLocation());
+        // giraffe: 풍선을 받은 사람에게만 (주변 검색은 1초마다 dispatchUpdate 가 한다 — 움직일 때마다 찾지 않는다)
+        List<Player> viewers = new ArrayList<>(userBalloonManager.getPufferfish().getViewers());
 
         if (entity.getLocation().getWorld() != userBalloonManager.getLocation().getWorld()) {
             userBalloonManager.getModelEntity().teleport(newLocation);
@@ -114,7 +116,7 @@ public class CosmeticBalloonType extends Cosmetic implements CosmeticUpdateBehav
         MessagesUtil.sendDebugMessages("Balloon location set to " + newLocation);
 
         HMCCPacketManager.sendTeleportPacket(userBalloonManager.getPufferfishBalloonId(), newLocation, false, viewers);
-        HMCCPacketManager.sendLeashPacket(userBalloonManager.getPufferfishBalloonId(), userBalloonManager.getLeashHolderId(entity), viewers);
+        // giraffe: 줄은 사람 위에 태운 고정점에 묶여 있어 움직일 때마다 다시 묶지 않는다 (새로 보는 사람은 dispatchUpdate 가 묶음)
     }
 
     public boolean isDyeablePart(String name) {
