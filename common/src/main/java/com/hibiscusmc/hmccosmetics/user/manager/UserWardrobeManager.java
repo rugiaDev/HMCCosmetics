@@ -35,6 +35,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserWardrobeManager {
 
@@ -171,7 +173,7 @@ public class UserWardrobeManager {
                 // Maybe null as backpack maybe despawned before entering
                 if (!user.isBackpackSpawned()) user.respawnBackpack();
                 if (user.isBackpackSpawned()) {
-                    java.util.List<Integer> standIds = new java.util.ArrayList<>();
+                    List<Integer> standIds = new ArrayList<>();
                     for (UserBackpackManager backpack : user.getUserBackpackManagers()) {
                         backpack.getEntityManager().teleport(npcLocation.clone().add(0, 2, 0));
                         viewerPackets.add(packetBuilder.buildEntityEquipmentSlotUpdatePacket(backpack.getFirstArmorStandId(), Map.of(EquipmentSlot.HEAD, user.getUserCosmeticItem(user.getCosmetic(backpack.getSlot())))));
@@ -351,7 +353,7 @@ public class UserWardrobeManager {
                 }
 
                 if (user.hasBackpackCosmetic() && user.isBackpackSpawned()) {   // giraffe: 등 치장 칸 3개
-                    java.util.List<Integer> standIds = new java.util.ArrayList<>();
+                    List<Integer> standIds = new ArrayList<>();
                     for (UserBackpackManager backpack : user.getUserBackpackManagers()) {
                         HMCCPacketManager.sendTeleportPacket(backpack.getFirstArmorStandId(), location, false, viewer);
                         backpack.getEntityManager().setRotation(nextyaw);

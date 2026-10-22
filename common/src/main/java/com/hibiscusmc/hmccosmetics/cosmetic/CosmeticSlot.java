@@ -7,6 +7,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 public class CosmeticSlot {
@@ -25,48 +27,48 @@ public class CosmeticSlot {
      * giraffe: 등 치장(바디 치장)이 들어갈 수 있는 칸 (앞에서부터 채운다). BACKPACK · BACKPACK_2 · BACKPACK_3 …
      * 칸 수는 설정을 읽을 때 {@link #setBackpackSlotCount} 로 정한다 (기본 3).
      */
-    public static volatile java.util.List<CosmeticSlot> BACKPACK_SLOTS = java.util.List.of(BACKPACK);
+    public static volatile List<CosmeticSlot> BACKPACK_SLOTS = List.of(BACKPACK);
 
     /** giraffe: 등 치장 칸인가 */
-    public static boolean isBackpack(@org.jetbrains.annotations.Nullable CosmeticSlot slot) {
+    public static boolean isBackpack(@Nullable CosmeticSlot slot) {
         return slot != null && BACKPACK_SLOTS.contains(slot);
     }
 
     /** giraffe: 바디 치장 칸 수를 정한다 (1 ~ {@link #MAX_BACKPACK_SLOTS}). 칸 BACKPACK_2 … 를 필요한 만큼 등록한다 */
     public static void setBackpackSlotCount(int count) {
         int clamped = Math.max(1, Math.min(MAX_BACKPACK_SLOTS, count));
-        java.util.List<CosmeticSlot> slots = new java.util.ArrayList<>();
+        List<CosmeticSlot> slots = new ArrayList<>();
         slots.add(BACKPACK);
         for (int index = 2; index <= clamped; index++) {
             slots.add(REGISTRY.computeIfAbsent("BACKPACK_" + index, CosmeticSlot::new));
         }
-        BACKPACK_SLOTS = java.util.List.copyOf(slots);
+        BACKPACK_SLOTS = List.copyOf(slots);
     }
     public static final CosmeticSlot BALLOON = register("BALLOON");
     /**
      * giraffe: 풍선이 들어갈 수 있는 칸 (앞에서부터 채운다). BALLOON · BALLOON_2 · BALLOON_3 …
      * 칸 수는 설정을 읽을 때 {@link #setBalloonSlotCount} 로 정한다 (기본 3).
      */
-    public static volatile java.util.List<CosmeticSlot> BALLOON_SLOTS = java.util.List.of(BALLOON);
+    public static volatile List<CosmeticSlot> BALLOON_SLOTS = List.of(BALLOON);
 
     /** giraffe: 풍선 칸인가 */
-    public static boolean isBalloon(@org.jetbrains.annotations.Nullable CosmeticSlot slot) {
+    public static boolean isBalloon(@Nullable CosmeticSlot slot) {
         return slot != null && BALLOON_SLOTS.contains(slot);
     }
 
     /** giraffe: 풍선 칸 수를 정한다 (1 ~ {@link #MAX_BACKPACK_SLOTS}) */
     public static void setBalloonSlotCount(int count) {
         int clamped = Math.max(1, Math.min(MAX_BACKPACK_SLOTS, count));
-        java.util.List<CosmeticSlot> slots = new java.util.ArrayList<>();
+        List<CosmeticSlot> slots = new ArrayList<>();
         slots.add(BALLOON);
         for (int index = 2; index <= clamped; index++) {
             slots.add(REGISTRY.computeIfAbsent("BALLOON_" + index, CosmeticSlot::new));
         }
-        BALLOON_SLOTS = java.util.List.copyOf(slots);
+        BALLOON_SLOTS = List.copyOf(slots);
     }
 
     /** giraffe: 이 치장 종류가 여러 칸에 들어갈 수 있으면 그 칸 목록 (등 치장 · 풍선), 아니면 null */
-    public static @org.jetbrains.annotations.Nullable java.util.List<CosmeticSlot> multiSlots(@org.jetbrains.annotations.Nullable CosmeticSlot baseSlot) {
+    public static @Nullable List<CosmeticSlot> multiSlots(@Nullable CosmeticSlot baseSlot) {
         if (baseSlot == BACKPACK) return BACKPACK_SLOTS;
         if (baseSlot == BALLOON) return BALLOON_SLOTS;
         return null;

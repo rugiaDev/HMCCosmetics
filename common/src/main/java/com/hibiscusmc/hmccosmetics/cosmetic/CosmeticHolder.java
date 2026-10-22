@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.List;
 
 /**
  * Represents any object that can wear/hold cosmetics,
@@ -45,7 +46,7 @@ public interface CosmeticHolder {
      * 착용 중이 아니면 null.
      */
     default @Nullable CosmeticSlot slotOf(@NotNull Cosmetic cosmetic) {
-        java.util.List<CosmeticSlot> multi = CosmeticSlot.multiSlots(cosmetic.getSlot());   // giraffe: 등 치장 · 풍선
+        List<CosmeticSlot> multi = CosmeticSlot.multiSlots(cosmetic.getSlot());   // giraffe: 등 치장 · 풍선
         if (multi != null) {
             for (CosmeticSlot slot : multi) {
                 Cosmetic existing = getCosmetic(slot);

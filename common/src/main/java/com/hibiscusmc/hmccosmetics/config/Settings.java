@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
+import com.hibiscusmc.hmccosmetics.cosmetic.CosmeticSlot;
 
 public class Settings {
 
@@ -243,9 +244,9 @@ public class Settings {
         balloonDefaultShowLead = cosmeticSettings.node(COSMETIC_BALLOON_DEFAULT_SHOW_LEAD_PATH).getBoolean(true);
         backpackPreventDarkness = cosmeticSettings.node(BACKPACK_PREVENT_DARKNESS_PATH).getBoolean(true);
         // giraffe: 바디 치장(등 치장) 동시 착용 수 — 기본 3
-        com.hibiscusmc.hmccosmetics.cosmetic.CosmeticSlot.setBackpackSlotCount(cosmeticSettings.node("giraffe-body-slots").getInt(3));
+        CosmeticSlot.setBackpackSlotCount(cosmeticSettings.node("giraffe-body-slots").getInt(3));
         // giraffe: 풍선 동시 착용 수 — 기본 3
-        com.hibiscusmc.hmccosmetics.cosmetic.CosmeticSlot.setBalloonSlotCount(cosmeticSettings.node("giraffe-balloon-slots").getInt(3));
+        CosmeticSlot.setBalloonSlotCount(cosmeticSettings.node("giraffe-balloon-slots").getInt(3));
 
         ConfigurationNode menuSettings = source.node(MENU_SETTINGS_PATH);
 

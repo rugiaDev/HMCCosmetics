@@ -41,8 +41,39 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.bukkit.event.inventory.InventoryCreativeEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 
 public class PlayerGameListener implements Listener {
+    /**
+     * giraffe: 치장 아이템이 진짜 아이템이 되는 길 막기.
+     * 모자 · 갑옷 치장은 본인 화면의 갑옷 칸에만 보여 주는 가짜 아이템인데, 크리에이티브는 손님(클라이언트)이 정한 아이템을
+     * 그대로 만들어 주므로 그 칸의 치장을 집어 다른 칸에 놓으면 진짜가 된다. 치장 표식(PDC cosmetic)이 붙은 아이템은 만들지 않는다.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onCreativeCosmeticItem(@NotNull InventoryCreativeEvent event) {
+        if (!HMCCInventoryUtils.isCosmeticItem(event.getCursor()) && !HMCCInventoryUtils.isCosmeticItem(event.getCurrentItem())) return;
+        event.setCancelled(true);
+        event.setCursor(new ItemStack(Material.AIR));
+        MessagesUtil.sendDebugMessages("Blocked creative cosmetic item for " + event.getWhoClicked().getName());
+        if (event.getWhoClicked() instanceof Player player) {
+            Bukkit.getScheduler().runTaskLater(HMCCosmeticsPlugin.getInstance(), player::updateInventory, 1);
+        }
+    }
+
+    /** giraffe: 들어올 때 가방에 치장 표식이 붙은 아이템이 있으면 지운다 (예전에 빠져나간 것 정리) */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoinRemoveCosmeticItems(@NotNull PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int index = 0; index < contents.length; index++) {
+            if (HMCCInventoryUtils.isCosmeticItem(contents[index])) {
+                HMCCosmeticsPlugin.getInstance().getLogger().warning("[giraffe] " + player.getName() + " 가방 " + index + "번 칸의 치장 아이템을 지웠습니다");
+                player.getInventory().setItem(index, null);
+            }
+        }
+    }
+
     @EventHandler(priority = EventPriority.LOW)
     public void onPlayerClick(@NotNull InventoryClickEvent event) {
         // || !event.getClickedInventory().getType().equals(InventoryType.PLAYER)

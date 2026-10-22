@@ -48,6 +48,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.logging.Level;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.bukkit.util.Vector;
 
 public class CosmeticUser implements CosmeticHolder {
     @Getter
@@ -56,10 +60,10 @@ public class CosmeticUser implements CosmeticHolder {
     private final HashMap<CosmeticSlot, Cosmetic> playerCosmetics = new HashMap<>();
     private UserWardrobeManager userWardrobeManager;
     // giraffe: 풍선 칸마다 그리기 담당 하나
-    private final java.util.LinkedHashMap<CosmeticSlot, UserBalloonManager> balloonManagers = new java.util.LinkedHashMap<>();
+    private final LinkedHashMap<CosmeticSlot, UserBalloonManager> balloonManagers = new LinkedHashMap<>();
     @Getter @Nullable
     // giraffe: 등 치장 칸마다 그리기 담당 하나 (원래는 사람마다 하나라 등 치장을 하나만 그렸다)
-    private final java.util.LinkedHashMap<CosmeticSlot, UserBackpackManager> backpackManagers = new java.util.LinkedHashMap<>();
+    private final LinkedHashMap<CosmeticSlot, UserBackpackManager> backpackManagers = new LinkedHashMap<>();
 
     // Cosmetic Settings/Toggles
     private final ArrayList<HiddenReason> hiddenReason = new ArrayList<>();
@@ -486,15 +490,15 @@ public class CosmeticUser implements CosmeticHolder {
      * giraffe: 그 칸 풍선을 띄우는 자리 — 첫 칸은 치장 설정(balloon-offset) 그대로, 둘째 칸부터는 사람 둘레로 돌려 겹치지 않게.
      * 첫 칸 자리(기본 0.5, 3, 0.5)를 사람 중심 원 위의 점으로 보고, 칸마다 같은 각도씩 돌리고 반지름 1.1 · 0.25 씩 낮춘다.
      */
-    public @NotNull org.bukkit.util.Vector balloonOffset(@NotNull CosmeticBalloonType type, @Nullable CosmeticSlot slot) {
-        org.bukkit.util.Vector base = type.getBalloonOffset().clone();
+    public @NotNull Vector balloonOffset(@NotNull CosmeticBalloonType type, @Nullable CosmeticSlot slot) {
+        Vector base = type.getBalloonOffset().clone();
         int index = slot == null ? 0 : Math.max(0, CosmeticSlot.BALLOON_SLOTS.indexOf(slot));
         if (index == 0) return base;
         int count = Math.max(2, CosmeticSlot.BALLOON_SLOTS.size());
         double startAngle = Math.atan2(base.getZ(), base.getX());
         double angle = startAngle + 2 * Math.PI * index / count;
         double radius = Math.max(1.1, Math.hypot(base.getX(), base.getZ()));
-        return new org.bukkit.util.Vector(Math.cos(angle) * radius, base.getY() - 0.25 * index, Math.sin(angle) * radius);
+        return new Vector(Math.cos(angle) * radius, base.getY() - 0.25 * index, Math.sin(angle) * radius);
     }
 
     public @Nullable UserWardrobeManager getWardrobeManager() {
@@ -633,7 +637,7 @@ public class CosmeticUser implements CosmeticHolder {
     }
 
     /** giraffe: 지금 그려진 등 치장 담당 전부 (칸 순서) */
-    public @NotNull java.util.Collection<UserBackpackManager> getUserBackpackManagers() {
+    public @NotNull Collection<UserBackpackManager> getUserBackpackManagers() {
         return List.copyOf(backpackManagers.values());
     }
 
@@ -644,8 +648,8 @@ public class CosmeticUser implements CosmeticHolder {
     }
 
     /** giraffe: 칸 → 치장 (저장용 — 같은 종류 칸이 여러 개라 치장의 기본 칸으로는 가를 수 없다) */
-    public @NotNull java.util.Map<CosmeticSlot, Cosmetic> getCosmeticsBySlot() {
-        return java.util.Map.copyOf(playerCosmetics);
+    public @NotNull Map<CosmeticSlot, Cosmetic> getCosmeticsBySlot() {
+        return Map.copyOf(playerCosmetics);
     }
 
     /** giraffe: 여러 칸 치장(등 치장 · 풍선)을 넣을 칸 — 이미 착용 중이면 그 칸, 아니면 빈 칸, 다 차 있으면 1번 칸 */
@@ -696,9 +700,9 @@ public class CosmeticUser implements CosmeticHolder {
                 && manager.getAreaEffectEntityId() != null && !manager.getAreaEffectEntityId().isEmpty();
             ids.add(firstPerson ? manager.getAreaEffectEntityId().get(0) : manager.getFirstArmorStandId());
         }
-        org.bukkit.entity.Entity entity = getEntity();
+        Entity entity = getEntity();
         if (entity != null) {
-            for (org.bukkit.entity.Entity passenger : entity.getPassengers()) ids.add(passenger.getEntityId());
+            for (Entity passenger : entity.getPassengers()) ids.add(passenger.getEntityId());
         }
         return ids.stream().mapToInt(Integer::intValue).toArray();
     }
@@ -716,7 +720,7 @@ public class CosmeticUser implements CosmeticHolder {
     public void spawnBalloon(CosmeticBalloonType cosmeticBalloonType, CosmeticSlot slot) {
         if (balloonManagers.containsKey(slot)) return;
 
-        org.bukkit.entity.Entity entity = getEntity();
+        Entity entity = getEntity();
 
         UserBalloonManager userBalloonManager1 = new UserBalloonManager(this, entity.getLocation());
         userBalloonManager1.getModelEntity().teleport(entity.getLocation().add(balloonOffset(cosmeticBalloonType, slot)));
