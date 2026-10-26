@@ -256,7 +256,7 @@ public class UserWardrobeManager {
                 MessagesUtil.sendDebugMessages("Checking... " + cosmetic.getId());
                 if (!user.canEquipCosmetic(cosmetic)) {
                     MessagesUtil.sendDebugMessages("Unable to keep " + cosmetic.getId());
-                    user.removeCosmeticSlot(cosmetic.getSlot());
+                    user.removeCosmeticSlot(cosmetic);   // giraffe: 등 치장 · 풍선은 실제로 든 칸(BACKPACK_2 등)을 뺀다 — 기본 칸을 빼면 가진 치장이 빠지고 못 가진 치장이 남았다
                 }
             }
 
