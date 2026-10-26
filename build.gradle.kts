@@ -66,6 +66,9 @@ allprojects {
 
         // Nexo
         maven("https://repo.nexomc.com/releases")
+
+        // packetevents (giraffe: 옷장 안 좌클릭 신호)
+        maven("https://repo.codemc.io/repository/maven-releases/")
     }
 
     dependencies {
@@ -94,6 +97,7 @@ allprojects {
         testCompileOnly("org.projectlombok:lombok:1.18.36")
         testAnnotationProcessor("org.projectlombok:lombok:1.18.36")
         compileOnly("com.nexomc:nexo:1.24.0")
+        compileOnly("com.github.retrooper:packetevents-spigot:2.14.0")   // giraffe: 옷장 안 좌클릭 신호
 
         implementation("dev.triumphteam:triumph-gui:3.2.0-SNAPSHOT") {
             exclude("net.kyori") // Already have adventure API
@@ -175,7 +179,7 @@ bukkit {
     apiVersion = "1.20"
     authors = listOf("LoJoSho")
     depend = listOf("HibiscusCommons")
-    softDepend = listOf("Nexo", "BetterHud", "ModelEngine", "Oraxen", "ItemsAdder", "Geary", "HMCColor", "WorldGuard", "MythicMobs", "PlaceholderAPI", "SuperVanish", "PremiumVanish", "LibsDisguises", "Denizen", "MMOItems", "Eco")
+    softDepend = listOf("Nexo", "BetterHud", "ModelEngine", "Oraxen", "ItemsAdder", "Geary", "HMCColor", "WorldGuard", "MythicMobs", "PlaceholderAPI", "SuperVanish", "PremiumVanish", "LibsDisguises", "Denizen", "MMOItems", "Eco", "packetevents")
     version = "${project.version}"
 
     commands {

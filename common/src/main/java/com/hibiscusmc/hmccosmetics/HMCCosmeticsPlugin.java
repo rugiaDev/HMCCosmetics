@@ -24,6 +24,7 @@ import com.hibiscusmc.hmccosmetics.hooks.worldguard.WGHook;
 import com.hibiscusmc.hmccosmetics.hooks.worldguard.WGListener;
 import com.hibiscusmc.hmccosmetics.listener.*;
 import com.hibiscusmc.hmccosmetics.packets.CosmeticPacketInterface;
+import com.hibiscusmc.hmccosmetics.packets.WardrobeSpectatorClickListener;
 import com.hibiscusmc.hmccosmetics.user.CosmeticUser;
 import com.hibiscusmc.hmccosmetics.user.CosmeticUsers;
 import com.hibiscusmc.hmccosmetics.util.search.PlayerSearchManager;
@@ -131,6 +132,10 @@ public final class HMCCosmeticsPlugin extends HibiscusPlugin {
 
         if (HibiscusCommonsPlugin.isOnPaper()) {
             getServer().getPluginManager().registerEvents(new PaperPlayerGameListener(), this);
+        }
+        // giraffe: 26.x 손님은 관전 모드 좌클릭 때 팔 휘두르기를 안 보낸다 — 옷장 안 좌클릭 메뉴를 관전 동작 신호로 연다
+        if (Bukkit.getPluginManager().isPluginEnabled("packetevents")) {
+            WardrobeSpectatorClickListener.register();
         }
         // Nexo resource-pack shading. Registered as a plain listener (not a HibiscusCommons Hook) so it
         // doesn't collide with HibiscusCommons' own "Nexo" item hook, and only when Nexo is present so
