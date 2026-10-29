@@ -2,8 +2,6 @@ package com.hibiscusmc.hmccosmetics.user.manager;
 
 import com.hibiscusmc.hmccosmetics.HMCCosmeticsPlugin;
 import com.hibiscusmc.hmccosmetics.config.Settings;
-import com.hibiscusmc.hmccosmetics.user.CosmeticUser;
-import com.hibiscusmc.hmccosmetics.user.CosmeticUsers;
 import com.hibiscusmc.hmccosmetics.util.MessagesUtil;
 import com.hibiscusmc.hmccosmetics.util.packets.HMCCPacketManager;
 import lombok.Getter;
@@ -59,12 +57,11 @@ public class UserEntity {
 
         // Go through all nearby players, check if they are new to the viewers list.
         for (Player player : players) {
-            CosmeticUser user = CosmeticUsers.getUser(player);
+            // giraffe: 주인을 못 보는 사람(로비 서로 숨김 · 투명 관리자 등)에게는 등 치장 · 풍선도 보내지 않는다 —
+            // 원본은 옷장 안에 있는 사람만 걸러서, 로비에서 숨긴 사람의 풍선 · 가방만 허공에 떠 보였다
+            // (치장 정보를 아직 못 읽은 사람도 걸러야 해서 CosmeticUser 유무와 상관없이 본다)
             if(
-                user != null
-                && owner != user.getUniqueId()
-                && user.isInWardrobe()
-                // Fixes issue where players in wardrobe would see other players cosmetics if they were not in wardrobe
+                !owner.equals(player.getUniqueId())
                 && !player.canSee(ownerPlayer)
             ) {
                 removePlayerIds.add(player.getUniqueId());
