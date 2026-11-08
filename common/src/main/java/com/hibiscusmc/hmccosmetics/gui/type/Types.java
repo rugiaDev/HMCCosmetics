@@ -2,6 +2,7 @@ package com.hibiscusmc.hmccosmetics.gui.type;
 
 import com.hibiscusmc.hmccosmetics.gui.type.types.TypeCosmetic;
 import com.hibiscusmc.hmccosmetics.gui.type.types.TypeEmpty;
+import com.hibiscusmc.hmccosmetics.gui.type.types.TypeOwnedToggle;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -12,6 +13,7 @@ public class Types {
 
     private static final TypeCosmetic TYPE_COSMETIC = new TypeCosmetic();
     private static final TypeEmpty TYPE_EMPTY = new TypeEmpty();
+    private static final TypeOwnedToggle TYPE_OWNED_TOGGLE = new TypeOwnedToggle();   // giraffe 11-08 보유한 치장만 보기
 
     /**
      * Get's a Menu Item type. Add custom menu item types with {@link #addType(Type)}

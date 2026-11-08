@@ -298,7 +298,19 @@ public class Menu {
                 }
             }
             case null, default -> {
+                // giraffe (11-08 S149): '보유한 치장만 보기'를 켠 사람은 묶음 칸(grid)을 보유한 치장으로 앞에서부터 채운다
+                Map<Integer, MenuItem> owned = OwnedView.plan(this, viewer, cosmeticHolder);
                 for (int i = 0; i < gui.getInventory().getSize(); i++) {
+                    if (owned != null && owned.containsKey(i)) {
+                        MenuItem ownedItem = owned.get(i);
+                        if (ownedItem == null) {
+                            gui.removeItem(i);
+                            gui.getInventory().setItem(i, null);
+                        } else {
+                            updateItem(viewer, cosmeticHolder, gui, i, List.of(ownedItem), null);
+                        }
+                        continue;
+                    }
                     if (items.containsKey(i)) {
                         updateItem(viewer, cosmeticHolder, gui, i);
                     }
@@ -323,8 +335,13 @@ public class Menu {
 
     private void updateItem(Player viewer, CosmeticHolder cosmeticHolder, Gui gui, int slot, @Nullable Consumer<ItemStack> consumer) {
         if (!items.containsKey(slot)) return;
-        List<MenuItem> menuItems = items.get(slot);
-        if (menuItems.isEmpty()) return;
+        updateItem(viewer, cosmeticHolder, gui, slot, items.get(slot), consumer);
+    }
+
+    /* giraffe: 칸에 놓을 단추 목록을 직접 받아 그린다 ('보유한 치장만 보기'가 다른 쪽 칸의 치장 단추를 옮겨 놓을 때) */
+    private void updateItem(Player viewer, CosmeticHolder cosmeticHolder, Gui gui, int slot, List<MenuItem> menuItems,
+                            @Nullable Consumer<ItemStack> consumer) {
+        if (menuItems == null || menuItems.isEmpty()) return;
 
         for (MenuItem item : menuItems) {
             Type type = item.type();
@@ -396,6 +413,11 @@ public class Menu {
     private ItemStack getMenuItem(Player viewer, CosmeticHolder cosmeticHolder, Type type, ConfigurationNode config, ItemStack itemStack, int slot) {
         if (!itemStack.hasItemMeta()) return itemStack;
         return type.setItem(viewer, cosmeticHolder, config, itemStack, slot);
+    }
+
+    /** giraffe: 칸 → 단추 목록 (보유한 치장만 보기가 같은 묶음 메뉴들의 치장을 모을 때) */
+    public Map<Integer, List<MenuItem>> getItemsBySlot() {
+        return Collections.unmodifiableMap(items);
     }
 
     public boolean canOpen(Player player) {
